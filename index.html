@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="cs" data-theme="day">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f6f1">
+  <title>Vybavenost území — datový průzkumník</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="xlsx.full.min.js"></script>
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Vybavenost území">
+        <span class="brand-mark" aria-hidden="true">≠</span>
+        <span>Vybavenost území</span>
+      </a>
+      <div class="topbar-meta">
+        <span class="local-badge"><span aria-hidden="true"></span> Data zpracována lokálně</span>
+        <span id="workbook-status" class="workbook-status">Čeká na načtení</span>
+        <span id="workbook-name" class="workbook-name">Sešit nebyl načten</span>
+        <button id="open-feedback-report" class="theme-toggle" type="button">Nahlásit chybu</button>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">
+          <svg class="theme-icon theme-icon-sun" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+          <svg class="theme-icon theme-icon-moon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20.2 15.1A8.6 8.6 0 0 1 8.9 3.8 8.7 8.7 0 1 0 20.2 15.1Z"/></svg>
+          <span>Noční režim</span>
+        </button>
+      </div>
+    </header>
+
+    <main>
+      <section class="intro">
+        <div class="intro-copy">
+          <p class="eyebrow">OVĚŘITELNÝ DATOVÝ ZÁKLAD</p>
+          <h1>Vybavenost podle potřeb území.</h1>
+          <p>Procházejte modelové položky, pravidla a vstupy přímo z pracovního sešitu. Každý údaj zůstává svázaný se svým zdrojem a stavem ověření.</p>
+        </div>
+        <div class="intro-actions">
+          <label id="dropzone" class="dropzone" for="workbook-input">
+            <input id="workbook-input" type="file" accept=".xlsx,.xls,.xlsm">
+            <span class="upload-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 16V4m0 0L8 8m4-4 4 4M5 14v5h14v-5"/></svg>
+            </span>
+            <span class="upload-copy"><strong>Import</strong><small>Načíst Excel nebo jej přetáhnout</small></span>
+          </label>
+          <button id="excel-export" class="dropzone export-button" type="button" disabled>
+            <span class="upload-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24"><path d="M12 4v12m0 0 4-4m-4 4-4-4M5 14v5h14v-5"/></svg>
+            </span>
+            <span class="upload-copy"><strong>Export Excel</strong><small>Uložit přenositelný projekt včetně úprav</small></span>
+          </button>
+        </div>
+      </section>
+
+      <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+
+      <section class="panel project-panel" aria-label="Hlavní vstupy projektu">
+        <div class="panel-heading project-heading">
+          <div>
+            <p class="eyebrow">PARAMETRY PROJEKTU</p>
+            <h2>Vstupy a odvozené ukazatele</h2>
+            <p class="panel-description">Zvolená hladina přepíná zákonné minimum nebo doporučený standard. Obyvatelé po záměru = současný stav + přírůstek projektu; obyvatelé spádu se započítávají samostatně.</p>
+          </div>
+          <div class="project-actions">
+            <span id="scenario-status" class="scenario-status">Načtěte pracovní sešit</span>
+            <button id="reset-inputs" class="text-button" type="button" disabled>Obnovit hodnoty ze sešitu</button>
+          </div>
+        </div>
+        <div id="project-input-grid" class="project-input-grid">
+          <div class="empty-list">Načtěte pracovní Excel a zobrazí se upravitelné vstupy.</div>
+        </div>
+        <details class="derived-details">
+          <summary>Odvozené ukazatele a další výpočtové předpoklady</summary>
+          <div id="derived-grid" class="derived-grid"></div>
+          <div id="secondary-input-grid" class="secondary-input-grid"></div>
+        </details>
+      </section>
+
+      <section class="workspace" aria-label="Datový průzkumník">
+        <aside class="panel catalog-panel">
+          <div class="panel-heading">
+            <div>
+              <p class="eyebrow">TEMATICKÉ SKUPINY</p>
+              <h2>Vybavenost</h2>
+            </div>
+            <span id="item-total" class="count-badge">0</span>
+          </div>
+          <label class="search-box" for="search-input">
+            <span aria-hidden="true">⌕</span>
+            <input id="search-input" type="search" placeholder="Hledat vybavenost, kód nebo zdroj…" autocomplete="off">
+            <kbd>Ctrl K</kbd>
+          </label>
+          <p class="helper-text">Vybavenost je uvedena jednou podle témat. Kliknutím na barevný tvar vyberte položku k realizaci; návazné sítě, retence a související parkování se označí automaticky. Pomocí šipky skupinu sbalte nebo rozbalte; názvem skupiny či položky filtrujte výstup.</p>
+          <div id="category-list" class="category-list" aria-live="polite">
+            <div class="empty-list">Načtěte pracovní Excel a zobrazí se tematické skupiny.</div>
+          </div>
+        </aside>
+
+        <section class="panel requirements-panel" aria-label="Zákonné a doporučené požadavky">
+          <div class="requirements-heading">
+            <div>
+              <p class="eyebrow">VÝSTUP Z DATOVÉHO KATALOGU</p>
+              <h2 id="selected-category-title">Všechny skupiny vybavenosti</h2>
+            </div>
+            <div class="requirements-heading-actions">
+              <label class="realization-filter" for="hide-unrealized-items">
+                <input id="hide-unrealized-items" type="checkbox">
+                <span>Skrýt nerealizované</span>
+              </label>
+              <span id="visible-count" class="count-badge">0 položek</span>
+            </div>
+          </div>
+          <p id="integrity-warning" class="integrity-warning" hidden></p>
+          <div class="requirement-columns">
+            <section class="requirement-column legal-column">
+              <div class="requirement-column-heading">
+                <span class="requirement-icon" aria-hidden="true">§</span>
+                <div><h3>Zákonné a podmíněné kontroly</h3><p>Právní minimum; obecné závazky jsou samostatně a ručně ověřované</p></div>
+                <span id="legal-count" class="count-badge">0</span>
+                <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="legal" aria-controls="legal-list" aria-expanded="true" aria-label="Sbalit zákonné a podmíněné kontroly"></button>
+              </div>
+              <div id="legal-list" class="requirement-list">
+                <div class="empty-list">Načtěte sešit pro zobrazení právních požadavků.</div>
+              </div>
+            </section>
+            <section class="requirement-column infrastructure-column">
+              <div class="requirement-column-heading">
+                <span class="requirement-icon" aria-hidden="true">⌁</span>
+                <div><h3>Infrastruktura</h3><p>Modelové kapacity a náklady; povinnost se posuzuje podle konkrétního záměru a podmínek správců sítí</p></div>
+                <span id="infrastructure-count" class="count-badge">0</span>
+                <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="infrastructure" aria-controls="infrastructure-list" aria-expanded="true" aria-label="Sbalit infrastrukturu"></button>
+              </div>
+              <div id="infrastructure-list" class="requirement-list">
+                <div class="empty-list">Načtěte sešit pro zobrazení infrastrukturních propočtů.</div>
+              </div>
+            </section>
+            <section class="requirement-column recommended-column">
+              <div class="requirement-column-heading">
+                <span class="requirement-icon" aria-hidden="true">✳</span>
+                <div><h3>Doporučené</h3><p>Rezerva a navýšení kapacity jsou seskupeny zvlášť</p></div>
+                <span id="recommended-count" class="count-badge">0</span>
+                <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="recommended" aria-controls="recommended-list" aria-expanded="true" aria-label="Sbalit doporučené položky"></button>
+              </div>
+              <div id="recommended-list" class="requirement-list">
+                <div class="empty-list">Načtěte sešit pro zobrazení doporučení.</div>
+              </div>
+            </section>
+            <section class="requirement-column review-column">
+              <div class="requirement-column-heading">
+                <span class="requirement-icon" aria-hidden="true">?</span>
+                <div><h3>Alternativy doporučení</h3><p>Jen odlišné varianty a odhady; upozornění k duplicitním položkám jsou přenesena do jejich karet výše</p></div>
+                <span id="review-count" class="count-badge">0</span>
+                <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="review" aria-controls="review-list" aria-expanded="true" aria-label="Sbalit alternativy doporučení"></button>
+              </div>
+              <div id="review-list" class="requirement-list">
+                <div class="empty-list">Načtěte sešit pro zobrazení dalších pravidel.</div>
+              </div>
+            </section>
+          </div>
+        </section>
+      </section>
+
+      <p class="scope-note"><strong>Kontrola dat:</strong> Právní povinnosti a metodická doporučení jsou odděleny podle oblasti a druhu pravidla v sešitu. Doporučené navýšení kapacity není vydáváno za právní normu; u škol se zadává a zobrazuje procentuálně podle typu zástavby (A/B 10 %, C 15 %, D 20 %), u ostatních objektů přímo v jednotce dané vybavenosti. Školní položky zůstávají také v zákonné části. Čtyři výpočty technické infrastruktury mají vlastní skupinu; konkrétní potřeba přípojek a zařízení se posuzuje podle projektu a podmínek správců sítí. Veřejná prostranství se počítají z kvalifikované zastavitelné plochy, nikoli z veškerého území. Kulturní sál je pouze scénář k prověření, nikoli povinnost nové výstavby. Dojezdové časy zdravotnických specialistů vyjadřují dostupnost hrazené služby, nikoli povinnost zřídit místní ordinaci. Zastávky veřejné dopravy jsou metodickým doporučením pěší dostupnosti. Kapacitu lze zadat ve stejné měrné jednotce jako návrh; její zdroj je nepovinný a datum se doplní automaticky. Kapacita bez zdroje se označí jako uživatelská a nezávisle nedoložená, prázdné pole znamená „neověřeno“, nikoli nulu. U každé položky je k dispozici internetové hledání její dostupnosti v okolí; nalezené výsledky je nutné samostatně ověřit. Školy a poliklinika mají navíc transparentní výměrový a investiční odhad s editovatelnými koeficienty a uvedenými zdroji. Modelové náklady jsou orientační přepočet, nikoli nová kalkulace RTS.</p>
+      <details id="feedback-report" class="feedback-panel">
+        <summary>Nahlásit chybu nebo navrhnout změnu</summary>
+        <p class="feedback-note">Export zahrne uložené zdroje, poznámky a výsledky kontrol včetně jejich položky či pravidla a souvisejících zadaných hodnot, také z dříve uloženého scénáře. U chyby nebo návrhu popište i místo v aplikaci (sekci a položku); do souboru se přidá také právě otevřený sešit a vybraná položka/skupina.</p>
+        <p class="feedback-note">Aplikace nic neposílá na server. Vytvoří místní soubor .txt a otevře váš e-mailový klient s připravenou adresou xavavrusa@vutbr.cz. Prohlížeč neumí soubor automaticky přiložit ani zprávu odeslat: přiložte stažený .txt a e-mail odešlete sami ze svého účtu.</p>
+        <form id="feedback-form" class="feedback-form">
+          <label class="feedback-field" for="feedback-errors">
+            <span>Pozorované chyby</span>
+            <textarea id="feedback-errors" rows="4" placeholder="Co nefunguje, jak chybu zopakovat a u které sekce/položky?"></textarea>
+          </label>
+          <label class="feedback-field" for="feedback-changes">
+            <span>Navrhované změny</span>
+            <textarea id="feedback-changes" rows="4" placeholder="Co změnit, kde v aplikaci a u které položky?"></textarea>
+          </label>
+          <div class="feedback-actions">
+            <button class="text-button feedback-submit" type="submit">Exportovat .txt a připravit e-mail</button>
+            <p id="feedback-status" class="feedback-status" role="status" aria-live="polite"></p>
+          </div>
+        </form>
+      </details>
+    </main>
+  </div>
+</body>
+</html>

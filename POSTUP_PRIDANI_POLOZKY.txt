@@ -1,0 +1,75 @@
+POSTUP PRO PŘIDÁNÍ NOVÉ POLOŽKY VYBAVENOSTI
+==========================================
+
+1. Nejdřív ověřte zdroj a klasifikaci
+-------------------------------------
+- Projděte listy Model_Vybavenosti, Pravidla_a_vzorce, Slovnik_vstupu a příslušný
+  cluster v Seznam Vybavenosti_pracovni_katalog_pravidel.xlsx.
+- Zapište přesné ID, název, tematický cluster, měrnou jednotku, zdroj, místo ve
+  zdroji, podmínky použití a vzorec. Ověřte, zda jde o zákonnou povinnost,
+  doporučení, pracovní odhad, nebo uživatelsky vloženou položku.
+- Nevydávejte metodický či pracovní odhad za zákonný podklad. Pokud položka
+  nemá zákonný podklad, označte ji v aplikaci červenou tečkou a textem
+  „Vloženo uživatelem — bez zákonného podkladu“.
+
+2. Připravte záznam v sešitu
+----------------------------
+- Přidejte nový řádek VYB_* do správného clusteru listu Model_Vybavenosti.
+- Vyplňte ID, název, jednotku a všechny zdrojové vstupy, které mají pro položku
+  ověřitelný význam. Uveďte vzorce, jednotky a vysvětlení editovatelných odhadů.
+- Přidejte pravidla pouze s doloženým zdrojem, jednoznačným ID položky,
+  podmínkou použití, výslednou jednotkou a omezením. Nejasné mapování neřešte
+  automatickým odečtem ani převodem.
+- U energetických údajů rozlišujte roční celkovou energii (kWh/rok), roční
+  elektřinu (kWh/rok) a špičkový příkon (kW). Nepřevádějte jeden ukazatel na
+  jiný bez uvedeného vzorce a předpokladu.
+
+3. Zapojte položku do aplikace
+------------------------------
+- V app.js doplňte nebo ověřte MODEL_HEADERS, aby každý použitý sloupec četl
+  přesný text záhlaví sešitu.
+- V readWorkbook() načtěte zdrojové hodnoty a vzorce do typu položky; nastavte
+  stabilní ID, jednoznačný klíč, název, skupinu, měrnou jednotku a prázdná pole
+  legalRules, recommendedRules a otherRules.
+- Pokud je položka uživatelská a není v sešitu, vytvořte ji jako explicitní
+  modelový záznam s userAdded: true. Zařaďte ji do správné skupiny a do
+  odpovídající sady INFRASTRUCTURE_ITEM_IDS či jiného typu výstupu.
+- Pro zákonnou povinnost, doporučení a kontrolní alternativu použijte správný
+  typ pravidla; případná mapování starých ID udržujte v RULE_MODEL_LINKS.
+- Zkontrolujte filtrování, vyhledávání, počítadla, realizaci, automatické
+  návaznosti a ukládání scénáře. Vyhněte se dvojímu přidání přes virtuální řádek
+  nebo zvláštní renderovací kartu.
+
+4. Implementujte výpočet a vlastní předpoklady
+----------------------------------------------
+- Výpočet umístěte do getProjectPlanningEstimate() a vraťte jasně typovaná data
+  včetně jednotek. Nevkládejte obchodní logiku jen do vykreslení.
+- Každý editovatelný předpoklad přidejte do odpovídajícího seznamu polí a
+  výchozí hodnotu nastavte pouze tehdy, když je vysvětlitelná a označená jako
+  scénář. Ověřte meze, nulové hodnoty, prázdné zdroje, zaokrouhlení a jednotky.
+- Odvozené množství, bodové prvky, plošné/lineární části a náklady rozlišujte.
+  Pokud chybí cenový zdroj, zobrazte „Neuvedeno“; nevymýšlejte RTS cenu ani
+  falešně přesnou investici.
+- Je-li energetická tabulka neúplná, vykazujte pokrytí a oddělený upravitelný
+  náhradní odhad. Nevydávejte odhad za hodnotu ze sešitu.
+
+5. Zobrazte výsledek ve všech relevantních částech
+--------------------------------------------------
+- Pro infrastrukturní kartu doplňte metriku v renderProjectEstimateMetrics()
+  a mezikroky, jednotky, zdroje i omezení v renderProjectEstimateCalculation().
+- Přidejte přiměřený vysvětlující text. Výsledek označte jako pracovní nebo
+  uživatelský předpoklad, pokud není doložen předpisem či ověřeným zdrojem.
+- V katalogu i výsledkové kartě ponechte viditelnou červenou značku u
+  userAdded položek. Zachovejte noční režim i mobilní rozvržení.
+- Upravte README, pokud se mění uživatelské zařazení nebo chování.
+
+6. Ověřte před předáním
+-----------------------
+- Spusťte node --check app.js.
+- V prohlížeči načtěte sešit a ověřte, že se položka objeví právě jednou ve
+  správné skupině i výstupní části, správně se filtruje a lze ji vybrat.
+- Otestujte ručně mezní hodnoty (0, prázdná data, změna vstupu, změna výběru,
+  neznámý zdroj) a ověřte, že výpočet, karta a shrnutí se aktualizují společně.
+- Zkontrolujte vizuálně značku uživatelského původu, vzorce, jednotky a noční
+  režim. Nahlaste případné chybějící údaje nebo výpočty; neskrývejte je
+  výchozími hodnotami.

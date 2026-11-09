@@ -1,0 +1,11 @@
+{
+    "chat.agent.maxRequests": 1000,
+    "chat.tools.terminal.ignoreDefaultAutoApproveRules": true,
+    "chat.tools.terminal.outputCompaction": true,
+    "chat.tools.terminal.outputDeltas": true,
+    "github.copilot.chat.claudeOpus5Prompt.enabled": true,
+    "github.copilot.chat.claudeSonnet5Prompt.enabled": true,
+    "chat.useClaudeHooks": true,
+    "github.copilot.chat.anthropic.tools.websearch.enabled": true,
+    "github.copilot.chat.anthropic.tools.websearch.maxUses": 20
+}
