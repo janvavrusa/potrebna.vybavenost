@@ -1,0 +1,1 @@
+# potrebna.vybavenost
