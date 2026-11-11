@@ -97,7 +97,7 @@
           </div>
         </aside>
 
-        <section class="panel requirements-panel" aria-label="Zákonné a doporučené požadavky">
+        <section class="panel requirements-panel" aria-label="Požadavky: povinné, doporučené, uživatelské a rezervní">
           <div class="requirements-heading">
             <div>
               <p class="eyebrow">VÝSTUP Z DATOVÉHO KATALOGU</p>
@@ -109,6 +109,9 @@
                 <span>Skrýt nerealizované</span>
               </label>
               <span id="visible-count" class="count-badge">0 položek</span>
+              <button id="realized-export" class="text-button" type="button" disabled>
+                Export realizací (Excel)
+              </button>
             </div>
           </div>
           <p id="integrity-warning" class="integrity-warning" hidden></p>
@@ -116,12 +119,45 @@
             <section class="requirement-column legal-column">
               <div class="requirement-column-heading">
                 <span class="requirement-icon" aria-hidden="true">§</span>
-                <div><h3>Zákonné a podmíněné kontroly</h3><p>Právní minimum; obecné závazky jsou samostatně a ručně ověřované</p></div>
+                <div><h3>Zákonem / Povinné</h3><p>Právní minimum a povinnosti vztahující se na konkrétní záměr</p></div>
                 <span id="legal-count" class="count-badge">0</span>
                 <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="legal" aria-controls="legal-list" aria-expanded="true" aria-label="Sbalit zákonné a podmíněné kontroly"></button>
               </div>
               <div id="legal-list" class="requirement-list">
                 <div class="empty-list">Načtěte sešit pro zobrazení právních požadavků.</div>
+              </div>
+            </section>
+            <section class="requirement-column recommended-column">
+              <div class="requirement-column-heading">
+                <span class="requirement-icon" aria-hidden="true">✳</span>
+                <div><h3>Metodika MMR / Doporučené</h3><p>Doporučené standardy a kapacity podle metodiky MMR</p></div>
+                <span id="recommended-count" class="count-badge">0</span>
+                <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="recommended" aria-controls="recommended-list" aria-expanded="true" aria-label="Sbalit doporučené položky"></button>
+              </div>
+              <div id="recommended-list" class="requirement-list">
+                <div class="empty-list">Načtěte sešit pro zobrazení doporučení.</div>
+              </div>
+            </section>
+            <section class="requirement-column review-column">
+              <div class="requirement-column-heading">
+                <span class="requirement-icon" aria-hidden="true">?</span>
+                <div><h3>Nadstandard / Definované uživatelem</h3><p>Uživatelsky vložené položky a samostatné scénáře nad rámec povinných a doporučených standardů</p></div>
+                <span id="review-count" class="count-badge">0</span>
+                <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="review" aria-controls="review-list" aria-expanded="true" aria-label="Sbalit alternativy doporučení"></button>
+              </div>
+              <div id="review-list" class="requirement-list">
+                <div class="empty-list">Načtěte sešit pro zobrazení dalších pravidel.</div>
+              </div>
+            </section>
+            <section class="requirement-column reserve-column">
+              <div class="requirement-column-heading">
+                <span class="requirement-icon" aria-hidden="true">+</span>
+                <div><h3>Rezervy</h3><p>Samostatné volitelné položky navýšení kapacity</p></div>
+                <span id="reserve-count" class="count-badge">0</span>
+                <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="reserve" aria-controls="reserve-list" aria-expanded="true" aria-label="Sbalit rezervy"></button>
+              </div>
+              <div id="reserve-list" class="requirement-list">
+                <div class="empty-list">Načtěte sešit pro zobrazení rezerv.</div>
               </div>
             </section>
             <section class="requirement-column infrastructure-column">
@@ -135,33 +171,11 @@
                 <div class="empty-list">Načtěte sešit pro zobrazení infrastrukturních propočtů.</div>
               </div>
             </section>
-            <section class="requirement-column recommended-column">
-              <div class="requirement-column-heading">
-                <span class="requirement-icon" aria-hidden="true">✳</span>
-                <div><h3>Doporučené</h3><p>Rezerva a navýšení kapacity jsou seskupeny zvlášť</p></div>
-                <span id="recommended-count" class="count-badge">0</span>
-                <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="recommended" aria-controls="recommended-list" aria-expanded="true" aria-label="Sbalit doporučené položky"></button>
-              </div>
-              <div id="recommended-list" class="requirement-list">
-                <div class="empty-list">Načtěte sešit pro zobrazení doporučení.</div>
-              </div>
-            </section>
-            <section class="requirement-column review-column">
-              <div class="requirement-column-heading">
-                <span class="requirement-icon" aria-hidden="true">?</span>
-                <div><h3>Alternativy doporučení</h3><p>Jen odlišné varianty a odhady; upozornění k duplicitním položkám jsou přenesena do jejich karet výše</p></div>
-                <span id="review-count" class="count-badge">0</span>
-                <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="review" aria-controls="review-list" aria-expanded="true" aria-label="Sbalit alternativy doporučení"></button>
-              </div>
-              <div id="review-list" class="requirement-list">
-                <div class="empty-list">Načtěte sešit pro zobrazení dalších pravidel.</div>
-              </div>
-            </section>
           </div>
         </section>
       </section>
 
-      <p class="scope-note"><strong>Kontrola dat:</strong> Právní povinnosti a metodická doporučení jsou odděleny podle oblasti a druhu pravidla v sešitu. Doporučené navýšení kapacity není vydáváno za právní normu; u škol se zadává a zobrazuje procentuálně podle typu zástavby (A/B 10 %, C 15 %, D 20 %), u ostatních objektů přímo v jednotce dané vybavenosti. Školní položky zůstávají také v zákonné části. Čtyři výpočty technické infrastruktury mají vlastní skupinu; konkrétní potřeba přípojek a zařízení se posuzuje podle projektu a podmínek správců sítí. Veřejná prostranství se počítají z kvalifikované zastavitelné plochy, nikoli z veškerého území. Kulturní sál je pouze scénář k prověření, nikoli povinnost nové výstavby. Dojezdové časy zdravotnických specialistů vyjadřují dostupnost hrazené služby, nikoli povinnost zřídit místní ordinaci. Zastávky veřejné dopravy jsou metodickým doporučením pěší dostupnosti. Kapacitu lze zadat ve stejné měrné jednotce jako návrh; její zdroj je nepovinný a datum se doplní automaticky. Kapacita bez zdroje se označí jako uživatelská a nezávisle nedoložená, prázdné pole znamená „neověřeno“, nikoli nulu. U každé položky je k dispozici internetové hledání její dostupnosti v okolí; nalezené výsledky je nutné samostatně ověřit. Školy a poliklinika mají navíc transparentní výměrový a investiční odhad s editovatelnými koeficienty a uvedenými zdroji. Modelové náklady jsou orientační přepočet, nikoli nová kalkulace RTS.</p>
+      <p class="scope-note"><strong>Kontrola dat:</strong> Právní povinnosti a metodická doporučení jsou odděleny podle oblasti a druhu pravidla v sešitu. Doporučená kapacita MŠ a obou stupňů ZŠ se počítá z poměrů obyvatel na dítě/žáka, populačních prahů a dostupnosti podle typu území v metodice MMR/TB050MMR01, nikoli procentní rezervou; školní položky zůstávají také v zákonné části. U ostatních objektů se doporučený přírůstek zadává v jednotce dané vybavenosti. Čtyři výpočty technické infrastruktury mají vlastní skupinu; konkrétní potřeba přípojek a zařízení se posuzuje podle projektu a podmínek správců sítí. Veřejná prostranství se počítají z kvalifikované zastavitelné plochy, nikoli z veškerého území. Kulturní sál je pouze scénář k prověření, nikoli povinnost nové výstavby. Dojezdové časy zdravotnických specialistů vyjadřují dostupnost hrazené služby, nikoli povinnost zřídit místní ordinaci. Zastávky veřejné dopravy jsou metodickým doporučením pěší dostupnosti. Kapacitu lze zadat ve stejné měrné jednotce jako návrh; její zdroj je nepovinný a datum se doplní automaticky. Kapacita bez zdroje se označí jako uživatelská a nezávisle nedoložená, prázdné pole znamená „neověřeno“, nikoli nulu. U každé položky je k dispozici internetové hledání její dostupnosti v okolí; nalezené výsledky je nutné samostatně ověřit. Školy a poliklinika mají navíc transparentní výměrový a investiční odhad s editovatelnými koeficienty a uvedenými zdroji. Modelové náklady jsou orientační přepočet, nikoli nová kalkulace RTS.</p>
       <details id="feedback-report" class="feedback-panel">
         <summary>Nahlásit chybu nebo navrhnout změnu</summary>
         <p class="feedback-note">Export zahrne uložené zdroje, poznámky a výsledky kontrol včetně jejich položky či pravidla a souvisejících zadaných hodnot, také z dříve uloženého scénáře. U chyby nebo návrhu popište i místo v aplikaci (sekci a položku); do souboru se přidá také právě otevřený sešit a vybraná položka/skupina.</p>

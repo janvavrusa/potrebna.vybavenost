@@ -268,12 +268,14 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .realization-summary { display: grid; gap: 3px; padding: 8px; border: 1px solid #dfe7d4; border-radius: 8px; background: #f8faf5; color: #43583b; font-size: 8px; line-height: 1.4; }
 .realization-summary span { color: var(--muted); }
 .realization-summary .realization-legend { color: #43583b; }
+.realization-toggle-all { width: 100%; min-height: 30px; margin-top: 3px; padding: 6px 8px; border: 1px dashed #91a783; border-radius: 7px; background: linear-gradient(110deg, #f8f3f1, #fbf8e9 52%, #f0f6fb); color: #40563a; font-size: 8px; font-weight: 700; text-align: center; cursor: pointer; }
+.realization-toggle-all:hover, .realization-toggle-all:focus-visible { border-color: #708e5f; background: linear-gradient(110deg, #f3e8e4, #f7f0d7 52%, #e6f0f8); outline: 2px solid rgba(94,132,67,.16); outline-offset: 1px; }
 .category-equipment-list { display: grid; gap: 1px; padding-left: 12px; }
-.category-equipment-row { display: grid; grid-template-columns: 17px minmax(0, 1fr); align-items: start; gap: 3px; }
+.category-equipment-row { display: grid; grid-template-columns: 22px minmax(0, 1fr); align-items: start; gap: 12px; }
 .realization-select-label { display: grid; place-items: center; min-height: 26px; cursor: pointer; }
 .realization-select-label input { width: 12px; height: 12px; margin: 0; accent-color: #527b46; cursor: pointer; }
 .realization-select-label input:disabled { cursor: not-allowed; opacity: .7; }
-.category-equipment-button { width: 100%; padding: 5px 7px; border: 0; border-radius: 5px; background: transparent; color: #687161; text-align: left; font-size: 8px; line-height: 1.4; cursor: pointer; }
+.category-equipment-button { width: 100%; min-width: 0; padding: 5px 7px; border: 0; border-radius: 5px; background: transparent; color: #687161; text-align: left; font-size: 9px; line-height: 1.4; white-space: normal; overflow-wrap: anywhere; hyphens: auto; cursor: pointer; }
 .category-equipment-button:hover, .category-equipment-button.is-active { background: #f0f4eb; color: #35452f; }
 .category-equipment-button.is-realization-selected { color: #171a16; font-weight: 750; }
 .category-equipment-button .user-inserted-mark { display: flex; margin-top: 3px; }
@@ -305,6 +307,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .recommended-column .requirement-icon { background: #edf2fb; color: #4a6798; }
 .infrastructure-column .requirement-icon { background: #e8f3f1; color: #34766d; }
 .review-column .requirement-icon { background: #f1f1ed; color: #6b7064; }
+.reserve-column .requirement-icon { background: #f5f0e2; color: #8a7032; }
 .requirement-column-heading > div { min-width: 0; flex: 1; }
 .requirement-column-heading h3 { margin: 0 0 3px; font-size: 11px; }
 .requirement-column-heading p { margin: 0; color: var(--muted); font-size: 8px; line-height: 1.4; }
@@ -335,7 +338,40 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .parking-legal-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
 .parking-legal-estimate { display: grid; grid-column: 1 / -1; gap: 4px; padding: 8px; border: 1px solid #e1dccd; border-radius: 7px; background: #fffefb; color: #5b523a; font-size: 8px; line-height: 1.5; }
 .parking-legal-estimate strong { color: #45402f; font-size: 9px; }
-.parking-part-label { color: #66745e; font-size: 8px; line-height: 1.4; }
+.special-parking-card { display: block; --category-color: #984b3c; }
+.special-parking-summary { display: grid; gap: 5px; padding: 10px; cursor: pointer; list-style: none; }
+.special-parking-summary::-webkit-details-marker { display: none; }
+.special-parking-title { margin: 0; color: var(--ink); font-size: 9px; line-height: 1.4; }
+.special-parking-summary-result { color: #53644b; font-size: 9px; font-weight: 750; }
+.special-parking-content { display: grid; gap: 8px; padding: 0 10px 10px; }
+.special-parking-note, .special-parking-warning { margin: 0; color: var(--muted); font-size: 8px; line-height: 1.5; }
+.special-parking-warning { color: #8a5032; }
+.special-parking-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.special-parking-inputs { padding: 8px; border: 1px solid #e3e8dc; border-radius: 7px; background: #fbfcf9; }
+.special-parking-inputs > summary { color: #44523c; font-size: 8px; font-weight: 700; cursor: pointer; }
+.special-parking-rate-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; padding-top: 8px; }
+.special-parking-rate { display: grid; min-width: 0; gap: 4px; color: var(--ink); font-size: 8px; line-height: 1.4; }
+.special-parking-rate input { width: 100%; min-width: 0; min-height: 30px; padding: 5px 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--paper); color: var(--ink); font-size: 9px; }
+.special-parking-rate small { color: var(--muted); font-size: 7px; }
+.special-parking-calculation { display: grid; gap: 6px; padding: 8px; border: 1px solid #e3e8dc; border-radius: 7px; background: #fbfcf9; }
+.special-parking-calculation h4 { margin: 0; color: var(--ink); font-size: 9px; }
+.special-parking-facility-list { display: grid; gap: 5px; margin: 0; padding-left: 18px; color: #596352; font-size: 8px; line-height: 1.5; }
+.special-parking-formula { margin: 0; color: #778170; font: 8px/1.45 "Consolas", monospace; overflow-wrap: anywhere; }
+.realization-export-dialog { width: min(760px, calc(100vw - 28px)); max-width: 760px; max-height: min(82vh, 760px); padding: 0; border: 1px solid var(--line); border-radius: 14px; background: var(--paper); color: var(--ink); box-shadow: 0 20px 70px rgba(20, 27, 16, .3); }
+.realization-export-dialog::backdrop { background: rgba(15, 20, 13, .52); backdrop-filter: blur(2px); }
+.realization-export-form { display: grid; gap: 12px; padding: 18px; }
+.realization-export-form h2 { margin: 0; font-size: 16px; }
+.realization-export-note { margin: 0; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.realization-export-groups { display: grid; gap: 8px; max-height: 48vh; overflow: auto; padding-right: 4px; }
+.realization-export-group { min-width: 0; margin: 0; padding: 9px 10px; border: 1px solid var(--line); border-radius: 9px; background: var(--soft); }
+.realization-export-group legend { padding: 0 4px; font-size: 10px; font-weight: 750; }
+.realization-export-group legend label { display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+.realization-export-group input { accent-color: var(--green); }
+.realization-export-item-list { display: grid; gap: 4px; max-height: 150px; overflow: auto; margin: 7px 0 0; padding-left: 18px; color: var(--muted); font-size: 8px; line-height: 1.45; }
+.realization-export-warning-list { max-height: 44vh; }
+.realization-export-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 8px; padding-top: 3px; }
+.realization-export-primary { border-color: #62864c; background: #edf4e8; color: #304a26; font-weight: 750; }
+.realization-export-primary:hover { background: #e2eed8 !important; }
 .requirement-card { --category-color: #78838b; border: 1px solid #e9ece5; border-left: 3px solid var(--category-color); border-radius: 8px; background: #fff; }
 .requirement-card.category-0 { --category-color: #608b52; }
 .requirement-card.category-1 { --category-color: #5685a0; }
@@ -359,11 +395,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .requirement-card[open] > summary { background: #eef4e9; box-shadow: 0 1px 5px rgba(35,52,29,.1); }
 .requirement-card.is-realization-selected[open] > summary { background: #171a16; box-shadow: none; }
 .requirement-card > summary::-webkit-details-marker { display: none; }
-.requirement-card-top { display: grid; grid-template-columns: 22px minmax(0, 1fr) minmax(115px, 40%) 18px; align-items: center; gap: 8px; }
+.requirement-card-top { display: grid; grid-template-columns: 40px minmax(0, 1fr) minmax(115px, 40%) 18px; align-items: start; gap: 8px; }
 .category-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--category-color); }
 .requirement-title { display: grid; gap: 3px; min-width: 0; }
-.requirement-title strong { overflow: hidden; font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
-.requirement-title small { overflow: hidden; color: var(--muted); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.requirement-title strong { overflow-wrap: anywhere; font-size: 9px; white-space: normal; }
+.requirement-title small { overflow-wrap: anywhere; color: var(--muted); font-size: 8px; white-space: normal; }
 .requirement-summary-metrics { display: grid; gap: 2px; min-width: 0; justify-items: end; }
 .requirement-quantity { color: #5a684f; font-size: 8px; font-weight: 700; text-align: right; }
 .requirement-capacity { color: #687460; font-size: 7px; line-height: 1.25; text-align: right; }
@@ -376,6 +412,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .expand-mark { color: #788273; font-size: 12px; text-align: right; }
 .requirement-card[open] .expand-mark { transform: rotate(45deg); }
 .requirement-body { display: grid; gap: 8px; padding: 0 9px 10px; }
+.item-brief-rule { margin: 0; padding: 8px 9px; border-left: 2px solid #879d75; border-radius: 0 7px 7px 0; background: linear-gradient(100deg, #f1f5ed, #fafbf8); color: #46523e; font-size: 9px; font-weight: 650; line-height: 1.5; }
 .item-results { padding: 9px; border: 1px solid #e4e9de; border-radius: 8px; background: #fff; }
 .item-results h4 { margin: 0 0 7px; color: #34442f; font-size: 9px; }
 .targeted-verification { display: grid; gap: 7px; padding: 9px; border: 1px solid #dfe8d7; border-radius: 8px; background: #fbfcf9; }
@@ -619,8 +656,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 :root[data-theme="night"] .parking-legal-inputs h4,
 :root[data-theme="night"] .parking-legal-note,
 :root[data-theme="night"] .parking-legal-estimate,
-:root[data-theme="night"] .parking-legal-estimate strong,
-:root[data-theme="night"] .parking-part-label {
+:root[data-theme="night"] .parking-legal-estimate strong {
   color: #dce5d2;
 }
 :root[data-theme="night"] .project-input-group {
@@ -679,6 +715,11 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 :root[data-theme="night"] .requirement-investment { color: #c2e69f; }
 :root[data-theme="night"] .requirement-realization-status { color: #d3e2c8; }
 :root[data-theme="night"] .requirement-card > summary .expand-mark { color: #dce5d2; }
+:root[data-theme="night"] .item-brief-rule {
+  border-left-color: #9ab486;
+  background: linear-gradient(100deg, #252d22, #20241e);
+  color: #dce5d2;
+}
 :root[data-theme="night"] .source-link { color: #b7d99c; }
 :root[data-theme="night"] .reserve-capacity-heading h3,
 :root[data-theme="night"] .review-placement-note h4,
@@ -801,6 +842,9 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   background-color: #1d221a;
   color: #dce5d2;
 }
+:root[data-theme="night"] .realization-toggle-all { border-color: #657957; background: linear-gradient(110deg, #352c2c, #38351f 52%, #243342); color: #d7e3cf; }
+:root[data-theme="night"] .realization-toggle-all:hover,
+:root[data-theme="night"] .realization-toggle-all:focus-visible { border-color: #91aa7f; background: linear-gradient(110deg, #453638, #484329 52%, #30465a); }
 :root[data-theme="night"] .manual-review .capacity-controls { border-color: var(--line); }
 :root[data-theme="night"] .availability-search {
   border-color: var(--line);
@@ -1409,13 +1453,15 @@ input[type="checkbox"]:focus-visible {
 }
 
 .category-equipment-row {
-  grid-template-columns: 19px minmax(0, 1fr);
-  align-items: center;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
 }
 
 .realization-select-label {
   position: relative;
   min-height: 28px;
+  padding-top: 5px;
 }
 
 .realization-select-label input {
@@ -1450,18 +1496,6 @@ input[type="checkbox"]:focus-visible {
   height: 11px;
   border-radius: 0;
   background: var(--category-color);
-}
-
-.category-dot::after {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, .58);
-  content: "";
-  transform: translate(-50%, -50%);
 }
 
 .category-button.category-0 { --category-color: #608b52; }
@@ -1510,21 +1544,188 @@ input[type="checkbox"]:focus-visible {
   background-color: var(--category-color);
 }
 
+.capacity-satisfaction-toggle {
+  width: 100%;
+  min-height: 34px;
+  margin: 0 0 8px;
+  padding: 7px 10px;
+  border: 1px dashed #9aa891;
+  border-radius: 8px;
+  background: linear-gradient(110deg, #f8faf5, #eef4e9);
+  color: #43583b;
+  font-size: 9px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.capacity-satisfaction-toggle.is-confirmed {
+  border-color: #9da69b;
+  background: #e8ebe6;
+  color: #576056;
+}
+.category-equipment-row.is-capacity-satisfied .category-equipment-button,
+.category-equipment-button.is-capacity-satisfied {
+  border-radius: 6px;
+  background: #e9ece7;
+  color: #737b72;
+  text-decoration: line-through;
+  text-decoration-color: #aab1a7;
+}
+.category-equipment-row.is-standard-inactive .category-equipment-button,
+.category-equipment-button.is-standard-inactive,
+.requirement-card.is-standard-inactive,
+.requirement-card.is-parking-reserve-unavailable {
+  border-color: #cbd0c9;
+  background-color: #f0f2ef;
+  color: #777f76;
+}
+.requirement-card.is-standard-inactive,
+.requirement-card.is-parking-reserve-unavailable {
+  opacity: .76;
+  filter: grayscale(.48);
+}
+.requirement-card.is-standard-inactive > summary,
+.requirement-card.is-parking-reserve-unavailable > summary {
+  background: #e9ece8;
+}
+.requirement-card.is-standard-inactive > summary .requirement-title strong,
+.requirement-card.is-standard-inactive > summary .requirement-quantity,
+.requirement-card.is-standard-inactive > summary .requirement-investment,
+.requirement-card.is-standard-inactive > summary .requirement-realization-status,
+.requirement-card.is-parking-reserve-unavailable > summary .requirement-title strong,
+.requirement-card.is-parking-reserve-unavailable > summary .requirement-quantity,
+.requirement-card.is-parking-reserve-unavailable > summary .requirement-investment,
+.requirement-card.is-parking-reserve-unavailable > summary .requirement-realization-status {
+  color: #687167;
+}
+.category-equipment-row.is-standard-inactive .realization-select-label,
+.category-dot-control:disabled {
+  opacity: .48;
+}
+.category-equipment-row.is-capacity-satisfied .realization-select-label {
+  opacity: .48;
+}
+.requirement-card.is-capacity-satisfied {
+  border-color: #c3c9c0;
+  border-left-color: #aeb6aa;
+  background: #edf0eb;
+  opacity: .7;
+  filter: grayscale(.58);
+}
+.requirement-card.is-capacity-satisfied > summary,
+.requirement-card.is-capacity-satisfied[open] > summary,
+.requirement-card.is-capacity-satisfied.is-realization-selected > summary {
+  background: #e5e9e3;
+  box-shadow: none;
+}
+.requirement-card.is-capacity-satisfied > summary .requirement-title strong,
+.requirement-card.is-capacity-satisfied > summary .requirement-quantity,
+.requirement-card.is-capacity-satisfied > summary .requirement-investment,
+.requirement-card.is-capacity-satisfied > summary .requirement-realization-status,
+.requirement-card.is-capacity-satisfied > summary .expand-mark {
+  color: #687167;
+}
+.project-estimate-calculation {
+  background: linear-gradient(135deg, #fbf8f6 0%, #fbfaef 52%, #f3f8fc 100%);
+}
+:root[data-theme="night"] .project-estimate-calculation {
+  border-color: #41483c;
+  background: linear-gradient(135deg, #282324 0%, #28271e 52%, #20272d 100%);
+}
+:root:not([data-theme="night"]) .calculation-section:not([open]) > summary {
+  background: linear-gradient(110deg, #f8e9e6 0%, #f8f2d9 52%, #e8f1f8 100%);
+}
+:root[data-theme="night"] .calculation-section:not([open]) > summary {
+  background: linear-gradient(110deg, #3a292c 0%, #393521 52%, #263641 100%);
+}
+:root[data-theme="night"] .project-estimate-calculation .calculation-parameter-label.estimate-color-area { color: #8ec5ff; }
+:root[data-theme="night"] .project-estimate-calculation .calculation-parameter-label.estimate-color-floor { color: #c6e983; }
+:root[data-theme="night"] .project-estimate-calculation .calculation-parameter-label.estimate-color-volume { color: #c6a9ff; }
+:root[data-theme="night"] .project-estimate-calculation .calculation-parameter-label.estimate-color-site { color: #efbd82; }
+:root[data-theme="night"] .project-estimate-calculation .calculation-parameter-label.estimate-color-paved { color: #80d8ca; }
+:root[data-theme="night"] .project-estimate-calculation .calculation-parameter-label.estimate-color-rts { color: #ffad8b; }
+:root[data-theme="night"] .project-estimate-calculation .calculation-parameter-label.estimate-color-fixed { color: #e0b69d; }
+:root[data-theme="night"] .project-estimate-calculation .calculation-parameter-label.estimate-color-surcharge { color: #f0a3b8; }
+:root[data-theme="night"] .calculation-equation .estimate-color-area { color: #8ec5ff; }
+:root[data-theme="night"] .calculation-equation .estimate-color-floor { color: #c6e983; }
+:root[data-theme="night"] .calculation-equation .estimate-color-volume { color: #c6a9ff; }
+:root[data-theme="night"] .calculation-equation .estimate-color-site { color: #efbd82; }
+:root[data-theme="night"] .calculation-equation .estimate-color-paved { color: #80d8ca; }
+:root[data-theme="night"] .calculation-equation .estimate-color-rts { color: #ffad8b; }
+:root[data-theme="night"] .calculation-equation .estimate-color-fixed { color: #e0b69d; }
+:root[data-theme="night"] .calculation-equation .estimate-color-surcharge { color: #f0a3b8; }
+:root[data-theme="night"] .capacity-satisfaction-toggle {
+  border-color: #56624e;
+  background: linear-gradient(110deg, #252b23, #20271e);
+  color: #dce5d2;
+}
+:root[data-theme="night"] .capacity-satisfaction-toggle.is-confirmed {
+  border-color: #65705f;
+  background: #30362e;
+  color: #b7c3ad;
+}
+:root[data-theme="night"] .category-equipment-row.is-capacity-satisfied .category-equipment-button,
+:root[data-theme="night"] .category-equipment-button.is-capacity-satisfied {
+  background: #292e28;
+  color: #939b91;
+  text-decoration-color: #697267;
+}
+:root[data-theme="night"] .category-equipment-row.is-standard-inactive .category-equipment-button,
+:root[data-theme="night"] .category-equipment-button.is-standard-inactive,
+:root[data-theme="night"] .requirement-card.is-standard-inactive,
+:root[data-theme="night"] .requirement-card.is-parking-reserve-unavailable {
+  border-color: #50574d;
+  background-color: #242923;
+  color: #939b91;
+}
+:root[data-theme="night"] .requirement-card.is-standard-inactive > summary,
+:root[data-theme="night"] .requirement-card.is-parking-reserve-unavailable > summary {
+  background: #292e28;
+}
+:root[data-theme="night"] .requirement-card.is-standard-inactive > summary .requirement-title strong,
+:root[data-theme="night"] .requirement-card.is-standard-inactive > summary .requirement-quantity,
+:root[data-theme="night"] .requirement-card.is-standard-inactive > summary .requirement-investment,
+:root[data-theme="night"] .requirement-card.is-standard-inactive > summary .requirement-realization-status,
+:root[data-theme="night"] .requirement-card.is-parking-reserve-unavailable > summary .requirement-title strong,
+:root[data-theme="night"] .requirement-card.is-parking-reserve-unavailable > summary .requirement-quantity,
+:root[data-theme="night"] .requirement-card.is-parking-reserve-unavailable > summary .requirement-investment,
+:root[data-theme="night"] .requirement-card.is-parking-reserve-unavailable > summary .requirement-realization-status {
+  color: #a7afa4;
+}
+:root[data-theme="night"] .requirement-card.is-capacity-satisfied {
+  border-color: #50574d;
+  border-left-color: #737c70;
+  background: #242923;
+  opacity: .74;
+  filter: grayscale(.55);
+}
+:root[data-theme="night"] .requirement-card.is-capacity-satisfied > summary,
+:root[data-theme="night"] .requirement-card.is-capacity-satisfied[open] > summary,
+:root[data-theme="night"] .requirement-card.is-capacity-satisfied.is-realization-selected > summary {
+  background: #292e28;
+}
+:root[data-theme="night"] .requirement-card.is-capacity-satisfied > summary .requirement-title strong,
+:root[data-theme="night"] .requirement-card.is-capacity-satisfied > summary .requirement-quantity,
+:root[data-theme="night"] .requirement-card.is-capacity-satisfied > summary .requirement-investment,
+:root[data-theme="night"] .requirement-card.is-capacity-satisfied > summary .requirement-realization-status,
+:root[data-theme="night"] .requirement-card.is-capacity-satisfied > summary .expand-mark {
+  color: #a7afa4;
+}
+
 .category-dot-control {
   display: grid;
-  width: 22px;
-  height: 22px;
+  width: 32px;
+  height: 32px;
   place-items: center;
   padding: 0;
   border: 0;
-  border-radius: 50%;
   background: transparent;
   cursor: pointer;
 }
 
-.category-dot-control:hover,
-.category-dot-control.is-selected {
-  background: color-mix(in srgb, var(--category-color) 13%, transparent);
+.category-dot-control:hover .category-dot,
+.category-dot-control.is-selected .category-dot {
+  filter: none;
+  transform: scale(1.08);
 }
 
 .category-dot-control:focus-visible {
@@ -1533,22 +1734,11 @@ input[type="checkbox"]:focus-visible {
 }
 
 .category-dot-control .category-dot {
-  width: 11px;
-  height: 11px;
+  width: 21px;
+  height: 21px;
   flex: 0 0 auto;
-  filter: opacity(.4);
+  filter: opacity(.52);
   transition: filter .12s, transform .12s;
-}
-
-.category-dot-control:hover .category-dot,
-.category-dot-control.is-selected .category-dot {
-  filter: none;
-  transform: scale(1.12);
-}
-
-:root[data-theme="night"] .category-dot-control:hover,
-:root[data-theme="night"] .category-dot-control.is-selected {
-  background: color-mix(in srgb, var(--category-color) 22%, transparent);
 }
 
 @media (max-width: 650px) {
