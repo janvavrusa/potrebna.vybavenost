@@ -58,10 +58,6 @@ const INPUT_HEADERS = {
 };
 const PRIMARY_INPUTS = [
   { row: 4, code: "O_celk", label: "Počet obyvatel řešeného území (přírůstek záměru)", kind: "number", min: 0, step: 1 },
-  { row: null, code: "BJ_POCET_MANUAL", label: "Počet nových bytových jednotek (byty i rodinné domy)", kind: "number", min: 0, step: 1,
-    defaultValue: "", unit: "bytových jednotek", note: "Ponechte prázdné pro odhad z obyvatel nebo z celkové HPP a průměrné plochy. Zahrnuje byty i rodinné domy." },
-  { row: null, code: "PARKING_TOTAL_HPP", label: "HPP pro odhad počtu bytů (volitelné)", kind: "number", min: 0, step: 1,
-    defaultValue: "", unit: "m² HPP", note: "Zadaná hodnota slouží jako vstupní přepis pro odhad počtu bytů; výsledná HPP navrženého bydlení se zobrazuje jako odvozený ukazatel." },
   { row: 5, code: "O_sidlo", label: "Současný počet obyvatel řešeného území", kind: "number", min: 0, step: 1,
     defaultValue: 1500 },
   { row: 6, code: "O_spad", label: "Počet obyvatel ve spádujících okolních sídlech (mimo řešené území, ne správní obvod)", kind: "number", min: 0, step: 1 },
@@ -74,7 +70,9 @@ const PRIMARY_INPUTS = [
   { row: 13, code: "KOD_TVAR", label: "Geometrický tvar řešeného území (zjednodušený)", kind: "select",
     options: ["TVAR_1", "TVAR_2", "TVAR_3", "TVAR_4", "TVAR_5"],
     labels: ["Kruh", "Pravidelný pětiúhelník", "Čtverec", "Obdélník (poměr stran 1:2)", "Lineární pás (poměr stran 1:4)"] },
-  { row: 14, code: "REZIM_STD", label: "Zvolená hladina navrhovaného standardu", kind: "select", options: ["ZAKON", "STANDARD"], labels: ["Zákonné minimum", "Doporučený standard"], unit: "" },
+  { row: 14, code: "REZIM_STD", label: "Zvolená hladina navrhovaného standardu", kind: "select",
+    options: ["ZAKON", "STANDARD", "MAX_STANDARD"],
+    labels: ["Zákonné minimum", "Doporučený standard", "Nejvyšší standard"], unit: "" },
   { row: null, code: "PARKING_APARTMENT_SHARE_A", label: "Podíl bytových domů · typ A", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 1, unit: "%" },
   { row: null, code: "PARKING_APARTMENT_SHARE_B", label: "Podíl bytových domů · typ B", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 0.8, unit: "%" },
   { row: null, code: "PARKING_APARTMENT_SHARE_C", label: "Podíl bytových domů · typ C", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 0.5, unit: "%" },
@@ -93,7 +91,7 @@ const PRIMARY_INPUTS = [
 ];
 const DERIVED_INPUTS = [
   { row: null, code: "O_uzemi_cil", label: "Počet obyvatel řešeného území po záměru", unit: "obyvatel", formula: "O_sidlo + O_celk" },
-  { row: 19, code: "O_prah", label: "Počet obyvatel včetně spádujících okolních sídel", unit: "obyvatel", formula: "O_uzemi_cil + O_spad" },
+  { row: 19, code: "O_prah", label: "Současný počet obyvatel obce pro standardy sociálních služeb", unit: "obyvatel", formula: "O_sidlo (současní obyvatelé) + O_celk (přírůstek) + O_spad" },
   { row: null, code: "BJ_pocet", label: "Počet nových bytových jednotek", unit: "jednotek", formula: "Ruční počet; jinak celková HPP / vážená plocha jednotky; jinak O_celk / počet osob na byt" },
   { row: null, code: "HPP_byty", label: "Celková HPP navrženého bydlení", unit: "m² HPP", formula: "BJ_pocet × HPP na byt" },
   { row: 20, code: "rho_hruba", label: "Hrubá obytná hustota", unit: "obyv./ha", formula: "O_celk / S_uzemi" },
@@ -103,6 +101,12 @@ const DERIVED_INPUTS = [
   { row: 24, code: "c_tvar", label: "Korekční činitel sítě bodů", unit: "", formula: "Konstanty_a_Ciselniky: korekce sítě bodů" },
   { row: 25, code: "R_max", label: "Maximální poloměr sítě", unit: "m", formula: "k_tvar × √(S_uzemi × 10 000)" },
   { row: 26, code: "L_max", label: "Max. pěší vzdálenost z těžiště", unit: "m", formula: "k_pesi × √(S_uzemi × 10 000)" }
+];
+const DERIVED_PARAMETER_INPUTS = [
+  { row: null, code: "BJ_POCET_MANUAL", label: "Počet nových bytových jednotek (byty i rodinné domy)", kind: "number", min: 0, step: 1,
+    defaultValue: "", unit: "bytových jednotek", note: "Volitelný přepis automatického odhadu; ponechte prázdné pro odhad z obyvatel nebo z celkové HPP a průměrné plochy." },
+  { row: null, code: "PARKING_TOTAL_HPP", label: "HPP pro odhad počtu bytů (volitelné)", kind: "number", min: 0, step: 1,
+    defaultValue: "", unit: "m² HPP", note: "Volitelný vstup pro odhad počtu bytů. Výsledná HPP navrženého bydlení se zobrazuje jako odvozený ukazatel." }
 ];
 const SECONDARY_INPUTS = [
   { row: 15, code: "HPP na byt", label: "Hrubá podlažní plocha jednoho bytu", kind: "number", min: 1, step: 1, max: 500, unit: "m² HPP / byt" },
@@ -178,6 +182,7 @@ const HOUSING_CONTRIBUTION_INPUTS = [
 ];
 const ITEM_ESTIMATE_INPUTS = [
   { code: "ITEM_QUANTITY", label: "Počet jednotek v propočtu", kind: "number", min: 0, step: 1, unit: "jednotek", color: "area" },
+  { code: "SOCIAL_DEMOGRAPHIC_COEFFICIENT", label: "Demografický koeficient kapacity", kind: "number", min: 0, max: 1, step: 0.00001, color: "area" },
   { code: "ITEM_USABLE_AREA_PER_UNIT", label: "Užitná plocha na jednotku", kind: "number", min: 0, step: 0.1, unit: "m² / jednotku", color: "area" },
   { code: "ITEM_TOTAL_FLOOR_FACTOR", label: "Koeficient celkové podlahové plochy", kind: "number", min: 0.1, step: 0.05, unit: "m² celkem / m² užitná", color: "floor" },
   { code: "ITEM_VOLUME_PER_AREA", label: "Koeficient obestavěného prostoru", kind: "number", min: 0, step: 0.1, unit: "m³ / m² celkem", color: "volume" },
@@ -193,6 +198,11 @@ const ITEM_ESTIMATE_INPUTS = [
   { code: "ITEM_RTS_FIXED_COST", label: "Další fixní náklady dle modelu", kind: "number", min: 0, step: 10000, unit: "Kč / projekt", color: "fixed" },
   { code: "ITEM_COST_SURCHARGE", label: "VRN a rezerva", kind: "percent", min: 0, max: 2, step: 0.01, unit: "%; z nákladů ZRN", color: "surcharge" }
 ];
+const GENERIC_ITEM_ESTIMATE_CODES = new Set([
+  "ITEM_QUANTITY", "ITEM_USABLE_AREA_PER_UNIT", "ITEM_TOTAL_FLOOR_FACTOR",
+  "ITEM_VOLUME_PER_AREA", "ITEM_SITE_AREA_PER_UNIT", "ITEM_PAVED_AREA_PER_UNIT",
+  "ITEM_RTS_RATE", "ITEM_RTS_RATE_BASIS", "ITEM_RTS_FIXED_COST", "ITEM_COST_SURCHARGE"
+]);
 const SUPERMARKET_ESTIMATE_INPUTS = [
   { code: "SUPERMARKET_MIN_POPULATION", label: "Minimální počet obyvatel pro scénář supermarketu", kind: "number", min: 0, step: 100, unit: "obyvatel", color: "area", note: "Výchozí pracovní práh 3 000 obyvatel; nejde o pravidlo MMR ani zákonnou povinnost." },
   { code: "SUPERMARKET_POPULATION_PER_STORE", label: "Přírůstek obyvatel na jednu modelovou prodejnu", kind: "number", min: 1, step: 100, unit: "obyvatel/prodejnu", color: "area" },
@@ -252,9 +262,116 @@ const ITEM_ESTIMATE_SCENARIOS = {
   VYB_13B: { usableArea: 1500, floorFactor: 1.05, volumeFactor: 3, siteArea: 5000, pavedArea: 2500 }
 };
 const HEATING_BOILER_ID = "VYB_20B_4";
+const BRNO_CAR_USE_RATES = [
+  { key: "housing", label: "Bydlení", rate: 120, bound: 90, visitor: 10, dwellings: true },
+  { key: "retail-ground", label: "Jednotlivé obchody v parteru", rate: 70, bound: 10, visitor: 90 },
+  { key: "small-service", label: "Služby a drobné provozovny", rate: 40, bound: 10, visitor: 90 },
+  { key: "auto-service", label: "Autoservis", rate: 20, bound: 10, visitor: 90 },
+  { key: "large-retail", label: "Velkoplošný obchod a služby", rate: 40, bound: 10, visitor: 90 },
+  { key: "admin-low", label: "Administrativa s malou návštěvností", rate: 50, bound: 90, visitor: 10 },
+  { key: "admin-high", label: "Administrativa s velkou návštěvností", rate: 45, bound: 60, visitor: 40 },
+  { key: "long-stay", label: "Dlouhodobé ubytování", rate: 120, bound: 80, visitor: 20 },
+  { key: "student-housing", label: "Ubytování pro studenty", rate: 250, bound: 90, visitor: 10 },
+  { key: "short-stay", label: "Krátkodobé ubytování", rate: 100, bound: 90, visitor: 10 },
+  { key: "motel", label: "Motel", rate: 25, bound: 90, visitor: 10 },
+  { key: "hostel", label: "Hostel", rate: 180, bound: 90, visitor: 10 },
+  { key: "social-care", label: "Institucionální a sociální péče", rate: 350, bound: 35, visitor: 65 },
+  { key: "school", label: "Školství", rate: 250, bound: 30, visitor: 70 },
+  { key: "nursery", label: "Jesle a mateřská škola", rate: 300, bound: 30, visitor: 70 },
+  { key: "university", label: "Vysoká škola", rate: 100, bound: 80, visitor: 20 },
+  { key: "training", label: "Vzdělávání a kongres", rate: 60, bound: 10, visitor: 90 },
+  { key: "gathering", label: "Shromažďovací prostory", rate: 60, bound: 20, visitor: 80 },
+  { key: "church", label: "Kostel a modlitebna", rate: 200, bound: 5, visitor: 95 },
+  { key: "ceremony", label: "Obřadní síň a krematorium", rate: 120, bound: 10, visitor: 90 },
+  { key: "culture", label: "Kulturní instituce", rate: 120, bound: 20, visitor: 80 },
+  { key: "outpatient-health", label: "Ambulantní zdravotnické zařízení", rate: 50, bound: 30, visitor: 70 },
+  { key: "inpatient-health", label: "Lůžkové zdravotnické zařízení", rate: 300, bound: 50, visitor: 50 },
+  { key: "indoor-sport", label: "Sportovní centrum s vnitřní hrací plochou", rate: 100, bound: 20, visitor: 80 },
+  { key: "sport-service", label: "Sportovní centrum bez hrací plochy a bazény", rate: 40, bound: 10, visitor: 90 },
+  { key: "outdoor-sport", label: "Venkovní sportoviště bez diváků", rate: 120, bound: 10, visitor: 90 },
+  { key: "football", label: "Fotbalové hřiště", rate: 400, bound: 10, visitor: 90 },
+  { key: "production", label: "Výroba (zvolit ukazatel 200–800 m²/stání)", rate: null, bound: 10, visitor: 90 },
+  { key: "storage", label: "Skladování", rate: 200, bound: 30, visitor: 70 }
+];
+const BRNO_BIKE_USE_RATES = [
+  { key: "housing", label: "Bydlení", rate: 60, bound: 90, visitor: 10 },
+  { key: "retail-ground", label: "Jednotlivé obchody v parteru", rate: 150, bound: 40, visitor: 60 },
+  { key: "small-service", label: "Služby a drobné provozovny", rate: 150, bound: 30, visitor: 70 },
+  { key: "auto-service", label: "Autoservis", rate: 150, bound: 30, visitor: 70 },
+  { key: "large-retail", label: "Velkoplošný obchod a služby", rate: 250, bound: 30, visitor: 70 },
+  { key: "admin-low", label: "Administrativa s malou návštěvností", rate: 200, bound: 90, visitor: 10 },
+  { key: "admin-high", label: "Administrativa s velkou návštěvností", rate: 150, bound: 60, visitor: 40 },
+  { key: "long-stay", label: "Dlouhodobé ubytování", rate: 60, bound: 90, visitor: 10 },
+  { key: "student-housing", label: "Ubytování pro studenty", rate: 60, bound: 90, visitor: 10 },
+  { key: "short-stay", label: "Krátkodobé ubytování", rate: 1000, bound: 90, visitor: 10 },
+  { key: "motel", label: "Motel", rate: 1000, bound: 90, visitor: 10 },
+  { key: "hostel", label: "Hostel", rate: 1000, bound: 90, visitor: 10 },
+  { key: "social-care", label: "Institucionální a sociální péče", rate: 500, bound: 30, visitor: 70 },
+  { key: "youth-care", label: "Domovy mládeže a azylové domy", rate: 60, bound: 30, visitor: 70 },
+  { key: "school", label: "Školství", rate: 60, bound: 90, visitor: 10 },
+  { key: "nursery", label: "Jesle a mateřská škola", rate: 150, bound: 40, visitor: 60 },
+  { key: "university", label: "Vysoká škola", rate: 60, bound: 70, visitor: 30 },
+  { key: "training", label: "Vzdělávání a kongres", rate: 300, bound: 80, visitor: 20 },
+  { key: "gathering", label: "Shromažďovací prostory", rate: 60, bound: 30, visitor: 70 },
+  { key: "church", label: "Kostel a modlitebna", rate: 60, bound: 30, visitor: 70 },
+  { key: "ceremony", label: "Obřadní síň a krematorium", rate: 60, bound: 30, visitor: 70 },
+  { key: "culture", label: "Kulturní instituce", rate: 250, bound: 30, visitor: 70 },
+  { key: "outpatient-health", label: "Ambulantní zdravotnické zařízení", rate: 250, bound: 70, visitor: 30 },
+  { key: "inpatient-health", label: "Lůžkové zdravotnické zařízení", rate: 500, bound: 70, visitor: 30 },
+  { key: "indoor-sport", label: "Sportovní centrum s vnitřní hrací plochou", rate: 100, bound: 40, visitor: 60 },
+  { key: "sport-service", label: "Sportovní centrum bez hrací plochy a bazény", rate: 40, bound: 40, visitor: 60 },
+  { key: "outdoor-sport", label: "Venkovní sportoviště bez diváků", rate: 120, bound: 10, visitor: 90 },
+  { key: "football", label: "Fotbalové hřiště", rate: 400, bound: 10, visitor: 90 },
+  { key: "production", label: "Výroba", rate: 500, bound: 90, visitor: 10 },
+  { key: "storage", label: "Skladování", rate: 500, bound: 90, visitor: 10 }
+];
+const BRNO_HPP_ITEM_IDS = {
+  "retail-ground": ["VYB_13A"],
+  "small-service": ["VYB_12"],
+  "large-retail": ["VYB_13B"],
+  "admin-low": ["VYB_11"],
+  "admin-high": [],
+  "long-stay": [],
+  "social-care": ["VYB_06A", "VYB_06B", "VYB_06C", "VYB_07A_1", "VYB_07A_2"],
+  "school": ["VYB_02A", "VYB_02B"],
+  "nursery": ["VYB_01", "VYB_01_J"],
+  "training": ["VYB_02C_1", "VYB_02C_2"],
+  "gathering": ["VYB_10B_1"],
+  "culture": ["VYB_10A", "VYB_10B_2"],
+  "outpatient-health": [
+    "VYB_09A_4", "VYB_09B_1", "VYB_09B_2", "VYB_16", "VYB_17",
+    "VYB_18", "VYB_19", "VYB_20"
+  ],
+  "indoor-sport": ["VYB_04", "VYB_05B"]
+};
+const BRNO_REQUIREMENTS = [
+  {
+    key: "BSP_BRNO_CAR_PARKING",
+    label: "Parkování motorových vozidel",
+    type: "cars",
+    description: "Vypočítá minimum stání z HPP realizací a zóny podle mapy v příloze č. 3."
+  },
+  {
+    key: "BSP_BRNO_BIKE_PARKING",
+    label: "Parkování jízdních kol",
+    type: "bikes",
+    description: "Počítá vázaná a návštěvnická místa z HPP právě vybraných realizací."
+  },
+  {
+    key: "BSP_BRNO_TREE_SPACES",
+    label: "Prostory pro růst stromů u povrchového parkování",
+    type: "trees",
+    description: "Navrhuje jeden prostor pro růst stromu na každých osm venkovních stání."
+  }
+];
+const BRNO_REQUIREMENT_KEYS = new Set(BRNO_REQUIREMENTS.map(({ key }) => key));
+const REMOVED_BRNO_REQUIREMENT_KEYS = new Set([
+  "BSP_BRNO_BOUNDARY_SETBACK", "BSP_BRNO_STORMWATER_LIMIT"
+]);
 const USER_ADDED_ITEM_IDS = new Set([
   "VYB_05B", "VYB_11", "VYB_13A", "VYB_13B", HEATING_BOILER_ID
 ]);
+const VOLUNTEER_FIRE_STATION_ID = "VYB_32";
 const RESIDENT_PARKING_ID = "VYB_15A_1";
 const RESIDENT_PARKING_LAW_ID = "VYB_15A_1_LAW";
 const RESIDENT_PARKING_RECOMMENDED_ID = "VYB_15A_1_RECOMMENDED";
@@ -266,7 +383,7 @@ const SPECIAL_BUILDING_PARKING_RATES = [
   { code: "EDUCATION", label: "Školy a školská zařízení", m2PerStall: 50, itemIds: ["VYB_01", "VYB_02A", "VYB_02B", "VYB_02C_1", "VYB_02C_2", "VYB_04"] },
   { code: "HEALTH", label: "Zdravotnická zařízení", m2PerStall: 50, itemIds: ["VYB_09A_4", "VYB_09B_1", "VYB_09B_2", "VYB_16", "VYB_17", "VYB_18", "VYB_19"] },
   { code: "SOCIAL", label: "Sociální služby", m2PerStall: 100, itemIds: ["VYB_06A", "VYB_06B", "VYB_07A_1", "VYB_07A_2"] },
-  { code: "CULTURE", label: "Kultura, krytý sport a veřejné služby", m2PerStall: 50, itemIds: ["VYB_04", "VYB_05B", "VYB_10A", "VYB_10B_1", "VYB_10B_2", "VYB_11", "VYB_12", "VYB_09D", "VYB_16A", "VYB_17A"] }
+  { code: "CULTURE", label: "Kultura, krytý sport a veřejné služby", m2PerStall: 50, itemIds: ["VYB_04", "VYB_05B", "VYB_10A", "VYB_10B_1", "VYB_10B_2", "VYB_11", "VYB_12", "VYB_09D", "VYB_16A", VOLUNTEER_FIRE_STATION_ID, "VYB_17A"] }
 ];
 const RESIDENT_PARKING_IDS = new Set([
   RESIDENT_PARKING_ID, RESIDENT_PARKING_LAW_ID,
@@ -275,13 +392,13 @@ const RESIDENT_PARKING_IDS = new Set([
 const PARKING_SPLIT_ITEM_IDS = new Set([
   ...RESIDENT_PARKING_IDS, "VYB_15A_2", "VYB_15A_3"
 ]);
-const TECHNICAL_ALTERNATIVE_IDS = new Set(["VYB_20A", "VYB_20B_1", "VYB_20B_2", "VYB_20B_3", HEATING_BOILER_ID]);
+const TECHNICAL_ALTERNATIVE_IDS = new Set(["VYB_20A", "VYB_20B_1", "VYB_20B_2", "VYB_20B_3"]);
 const INFRASTRUCTURE_ITEM_IDS = TECHNICAL_ALTERNATIVE_IDS;
 const INFRASTRUCTURE_RESERVE_SUFFIX = "_RESERVE";
 const TECHNICAL_INFRASTRUCTURE_CATEGORY = "TECHNICKÁ INFRASTRUKTURA A VODNÍ HOSPODÁŘSTVÍ";
 const RECOMMENDED_SCENARIO_ITEM_IDS = new Set([
   "VYB_11", "VYB_05B", "VYB_02C_1", "VYB_02C_2",
-  "VYB_09D", "VYB_16A", "VYB_17A"
+  "VYB_16A", VOLUNTEER_FIRE_STATION_ID, "VYB_17A"
 ]);
 const REALIZATION_NETWORK_IDS = new Set(["VYB_20B_1", "VYB_20B_2", "VYB_20B_3"]);
 const REALIZATION_PARKING_IDS = new Set([
@@ -400,8 +517,7 @@ const RTS_801_GROUP_BY_ITEM_ID = {
   VYB_06A: "801.9", VYB_06B: "801.9", VYB_07A_1: "801.9", VYB_07A_2: "801.9",
   VYB_09B_1: "801.1", VYB_09B_2: "801.1", VYB_09A_4: "801.1", VYB_16: "801.1",
   VYB_17: "801.1", VYB_18: "801.1", VYB_19: "801.1", VYB_20: "801.1",
-  VYB_09D: "801.6", VYB_16A: "801.6", VYB_17A: "801.6",
-  VYB_09D: "801.6", VYB_16A: "801.6", VYB_17A: "801.6",
+  VYB_09D: "801.6", VYB_16A: "801.6", [VOLUNTEER_FIRE_STATION_ID]: "801.6", VYB_17A: "801.6",
   VYB_10A: "801.4", VYB_10B_1: "801.4", VYB_10B_2: "801.4",
   VYB_11: "801.6",
   VYB_13A: "801.8", VYB_13B: "801.8",
@@ -424,15 +540,15 @@ const PROJECT_INPUT_GROUPS = [
   {
     label: "Plochy a tvar území",
     fields: [
-      { code: "S_uzemi" }, { code: "S_zastav" }, { code: "TYP_UZEMI" }, { code: "KOMPAKT" },
-      { code: "KOD_TVAR" }, { field: COVERAGE_OVERLAP_INPUT, secondary: true }
+      { code: "S_uzemi" }, { code: "S_zastav" }, { code: "TYP_UZEMI" },
+      { code: "KOD_TVAR" }, { field: COVERAGE_OVERLAP_INPUT, secondary: true },
+      { code: "Plocha pro odhad dostupnosti", secondary: true }
     ]
   },
   {
     label: "Počty obyvatel",
     fields: [
-      { code: "O_sidlo" }, { code: "O_celk" },
-      { code: "O_spad" }
+      { code: "O_sidlo" }, { code: "O_celk" }, { code: "O_spad" }
     ]
   },
   {
@@ -447,12 +563,11 @@ const PROJECT_INPUT_GROUPS = [
   {
     label: "Počet bytů, podlažnost, HPP a plošné předpoklady",
     fields: [
-      { code: "BJ_POCET_MANUAL" },
-      { code: "PARKING_TOTAL_HPP" },
       { code: "PARKING_LARGE_APARTMENT_SHARE" },
       { code: "PARKING_SMALL_APARTMENT_AREA_M2" },
       { code: "PARKING_LARGE_APARTMENT_AREA_M2" },
       { code: "PARKING_FAMILY_HOME_AREA_M2" },
+      { code: "KOMPAKT" },
       { code: "Průměrná podlažnost", secondary: true },
       { code: "HPP na byt", secondary: true },
       { code: "Koeficient zastavění", secondary: true }
@@ -461,6 +576,7 @@ const PROJECT_INPUT_GROUPS = [
 ];
 const GENERAL_OBLIGATION_RULE_IDS = new Set(["ZEL-LEG-002", "SAFE-LEG-001", "TECH-LEGAL-002"]);
 const HIDDEN_DUPLICATE_ITEM_IDS = new Set(["VYB_16B"]);
+const REMOVED_SOCIAL_SERVICE_ITEM_IDS = new Set(["VYB_06C", "VYB_07A_1", "VYB_07A_2"]);
 const RULE_MODEL_LINKS = {
   "ZEL-LEG-001": ["VYB_04A"],
   "ZEL-MET-001": ["VYB_03A"],
@@ -498,7 +614,7 @@ const RULE_MODEL_LINKS = {
   "MOB-MET-002": ["VYB_15A_1", "VYB_15A_2", "VYB_15A_3"],
   "MOB-MET-003": ["VYB_15B_1", "VYB_15B_2"],
   "MOB-MET-004": ["VYB_15B_2"],
-  "SAFE-MET-001": ["VYB_16B"],
+  "SAFE-MET-001": ["VYB_16B", VOLUNTEER_FIRE_STATION_ID],
   "SAFE-LEG-001": ["VYB_17B"],
   "TECH-LEGAL-002": ["VYB_18A", "VYB_18B"],
   "TECH-MET-001": ["VYB_18A"],
@@ -627,12 +743,17 @@ const SPATIAL_ESTIMATE_CONFIG = {
     applyPointFloor: false,
     pointFloorNote: "Pěší dosah zbrojnice je pouze jedna z kontrol. Potřebu nové zbrojnice nelze automaticky odvodit bez posouzení JPO, akceschopnosti a požárního poplachového plánu."
   },
+  [VOLUNTEER_FIRE_STATION_ID]: {
+    ruleId: "SAFE-MET-001",
+    distanceMeters: 1000,
+    applyPointFloor: false
+  },
   VYB_18A: { ruleId: "TECH-MET-001", distanceMeters: 50 },
   VYB_18B: { ruleId: "TECH-MET-002", distanceMeters: "recycling-collection" }
 };
 const SPATIAL_POINT_FLOOR_ITEM_IDS = new Set([
-  "VYB_03A", "VYB_03B", "VYB_03C", "VYB_04B",
-  "VYB_06A", "VYB_10A", "VYB_14", "VYB_18A", "VYB_18B",
+  "VYB_03A", "VYB_03B", "VYB_04B",
+  "VYB_10A", "VYB_14", "VYB_18A", "VYB_18B",
   "VYB_09A_4", "VYB_16", "VYB_17", "VYB_18", "VYB_19", "VYB_20"
 ]);
 const GEOMETRY_EXTENTS = {
@@ -645,7 +766,11 @@ const GEOMETRY_EXTENTS = {
 const ITEM_DISPLAY_NAMES = {
   VYB_03A: "Hřiště pro předškolní děti",
   VYB_03B: "Hřiště pro mladší školní děti",
-  VYB_03C: "Sportoviště pro mládež a dospělé",
+  VYB_03C: "Hřiště pro mládež a dospělé",
+  VYB_18A: "Stanoviště SKO a separace",
+  VYB_18B: "Podzemní/polopodzemní kontejnerová hnízda",
+  VYB_06A: "Centrum denních služeb a denní stacionář",
+  VYB_06B: "Domov pro seniory, dům s pečovatelskou službou",
   VYB_04A: "Veřejné prostranství",
   VYB_04B: "Veřejná parková zeleň",
   VYB_05B: "Krytá veřejná sportovní hala",
@@ -659,9 +784,284 @@ const ITEM_DISPLAY_NAMES = {
   VYB_15B_1: "P+R / přestupní parkoviště",
   VYB_15B_2: "Cyklistická stání a B+R"
 };
+const SOCIAL_SERVICE_AVAILABILITY_STANDARDS = [
+  {
+    key: "day-services",
+    label: "Centrum denních služeb a denní stacionář",
+    details: "Doporučený standard: Typ A/B/C – skutečná pěší docházka do 600 m; typ D – dojezdová doba do 30 minut.",
+    territories: ["A", "B", "C", "D"],
+    accessStandard: true,
+    thresholdText: "Typ A/B/C: skutečná pěší docházka do 600 m; typ D: dojezdová doba do 30 minut",
+    itemId: "VYB_06A",
+    demographic: {
+      coefficient: 0.004,
+      unitLabel: "míst",
+      unitForms: ["místo", "místa", "míst"],
+      usableAreaPerUnit: 14,
+      siteAreaPerUnit: 20,
+      source: "Demografický scénář: 20 % obyvatel v cílové seniorské nebo obdobně potřebné skupině × 2 % z nich potřebujících současně denní službu = 0,004 místa na obyvatele. Jde o návrhový předpoklad, nikoli statistický normativ; upravte podle věkové struktury a poskytovatele."
+    }
+  },
+  {
+    key: "low-threshold-day-center",
+    label: "Nízkoprahové denní centrum",
+    details: "Samostatná ambulantní služba. Doporučený standard: Typ A/B/C, obec nad 5 000 obyvatel – sídelně-strukturální přítomnost v obci.",
+    territories: ["A", "B", "C"],
+    minimumPopulation: 5000,
+    thresholdText: "Typ A/B/C, obce > 5 000 obyvatel: sídelně-strukturální přítomnost v obci",
+    templateId: "VYB_06A",
+    demographic: {
+      coefficient: 0.001,
+      unitLabel: "míst",
+      unitForms: ["místo", "místa", "míst"],
+      usableAreaPerUnit: 14,
+      siteAreaPerUnit: 20,
+      source: "Demografický scénář: 1 % obyvatel v cílové skupině × 10 % současně využívajících službu = 0,001 místa na obyvatele. Podíl cílové skupiny i souběžné využití jsou pracovní předpoklady, nikoli statistický normativ."
+    }
+  },
+  {
+    key: "ambulatory-social-care",
+    label: "Ostatní zařízení ambulantní sociální péče",
+    details: "Doporučený standard MMR se vztahuje na nízkoprahové denní centrum, nízkoprahové zařízení pro děti a mládež, týdenní stacionář a intervenční centrum: Typ A/B/C, obce > 5 000 obyvatel – sídelně-strukturální přítomnost v obci. Kontaktní centra a zařízení sociálně aktivizačních služeb jsou v modelu zahrnuta, ale tabulka 1 jim tento práh nepřiřazuje samostatně.",
+    territories: ["A", "B", "C"],
+    minimumPopulation: 5000,
+    thresholdText: "Typ A/B/C, obce > 5 000 obyvatel: sídelně-strukturální přítomnost v obci",
+    templateId: "VYB_06A",
+    demographic: {
+      coefficient: 0.002,
+      unitLabel: "míst",
+      unitForms: ["místo", "místa", "míst"],
+      usableAreaPerUnit: 14,
+      siteAreaPerUnit: 20,
+      source: "Skupinový demografický scénář pro více různých služeb: 5 % obyvatel s předpokládanou potřebou podpory × 4 % současně využívajících některou z těchto služeb = 0,002 místa na obyvatele. Jde jen o společný pracovní odhad; ověřte skladbu služeb a místní poptávku."
+    }
+  },
+  {
+    key: "night-shelter",
+    label: "Noclehárna",
+    details: "Doporučený standard: Typ A/B, obce > 30 000 obyvatel – sídelně-strukturální přítomnost v obci.",
+    territories: ["A", "B"],
+    minimumPopulation: 30000,
+    thresholdText: "Typ A/B, obce > 30 000 obyvatel: sídelně-strukturální přítomnost v obci",
+    templateId: "VYB_07A_1",
+    demographic: {
+      coefficient: 0.0005,
+      unitLabel: "lůžek",
+      unitForms: ["lůžko", "lůžka", "lůžek"],
+      usableAreaPerUnit: 32,
+      siteAreaPerUnit: 40,
+      source: "Demografický scénář: 0,5 % obyvatel v modelované skupině osob bez stabilního bydlení × 10 % současně potřebujících lůžko = 0,0005 lůžka na obyvatele. Jde o pracovní předpoklad, nikoli normativ; podklad ÚÚR pro noclehárnu přímo odpovídající není."
+    }
+  },
+  {
+    key: "crisis-services",
+    label: "Azylový dům a zařízení pro krizovou pomoc",
+    details: "Doporučený standard: Typ A/B, obce > 30 000 obyvatel – sídelně-strukturální přítomnost v obci.",
+    territories: ["A", "B"],
+    minimumPopulation: 30000,
+    thresholdText: "Typ A/B, obce > 30 000 obyvatel: sídelně-strukturální přítomnost v obci",
+    templateId: "VYB_07A_1",
+    demographic: {
+      coefficient: 0.0005,
+      unitLabel: "lůžek",
+      unitForms: ["lůžko", "lůžka", "lůžek"],
+      usableAreaPerUnit: 35,
+      siteAreaPerUnit: 50,
+      source: "Skupinový demografický scénář: 1 % obyvatel v modelované skupině ohrožené bytovou či jinou krizí × 5 % současně potřebujících lůžko = 0,0005 lůžka na obyvatele. Jde o pracovní předpoklad bez společného normativu; ověřte skladbu služeb a místní potřebu."
+    }
+  },
+  {
+    key: "halfway-house",
+    label: "Dům na půl cesty",
+    details: "Doporučený standard: Typ A/B, obce > 50 000 obyvatel – sídelně-strukturální přítomnost v obci.",
+    territories: ["A", "B"],
+    minimumPopulation: 50000,
+    thresholdText: "Typ A/B, obce > 50 000 obyvatel: sídelně-strukturální přítomnost v obci",
+    templateId: "VYB_07A_1",
+    demographic: {
+      coefficient: 0.0001,
+      unitLabel: "lůžek",
+      unitForms: ["lůžko", "lůžka", "lůžek"],
+      usableAreaPerUnit: 35,
+      siteAreaPerUnit: 50,
+      source: "Demografický scénář: 0,2 % obyvatel v modelované skupině mladých lidí potřebujících návazné bydlení × 5 % současně umístěných = 0,0001 lůžka na obyvatele. Jde o pracovní předpoklad, nikoli normativ; ověřte místní potřebu a spád."
+    }
+  },
+  {
+    key: "care-service-housing",
+    label: "Domov pro seniory, dům s pečovatelskou službou",
+    details: "Doporučený standard MMR pro domov pro seniory: Typ A – sídelně-strukturální přítomnost v obci. Dům s pečovatelskou službou je zahrnut do společné modelové položky; tabulka 1 mu samostatný práh nestanoví.",
+    territories: ["A"],
+    thresholdText: "Domov pro seniory: Typ A, sídelně-strukturální přítomnost v obci; pro dům s pečovatelskou službou tabulka 1 samostatný práh neuvádí",
+    itemId: "VYB_06B",
+    demographic: {
+      coefficient: 0.01,
+      unitLabel: "bytů",
+      unitForms: ["byt", "byty", "bytů"],
+      usableAreaPerUnit: 45,
+      siteAreaPerUnit: 60,
+      source: "Demografický scénář položky Domov pro seniory, dům s pečovatelskou službou: 10 % obyvatel v seniorské skupině × 10 % z nich potřebujících byt s pečovatelskou službou = 0,01 bytu na obyvatele. Podíly jsou návrhové předpoklady k místnímu ověření, nikoli statistický normativ. ÚÚR uvádí odděleně orientační výměru 45 m² podlažní plochy a 60 m² pozemku na byt."
+    }
+  },
+  {
+    key: "disability-services",
+    label: "Domov pro osoby se zdravotním postižením a chráněné bydlení",
+    details: "Doporučený standard: Typ A/B, obce > 30 000 obyvatel – sídelně-strukturální přítomnost v obci. Položka zahrnuje domov pro osoby se zdravotním postižením a chráněné bydlení.",
+    territories: ["A", "B"],
+    minimumPopulation: 30000,
+    thresholdText: "Typ A/B, obce > 30 000 obyvatel: sídelně-strukturální přítomnost v obci",
+    templateId: "VYB_07A_1",
+    demographic: {
+      coefficient: 0.002,
+      unitLabel: "míst",
+      unitForms: ["místo", "místa", "míst"],
+      usableAreaPerUnit: 40,
+      siteAreaPerUnit: 60,
+      source: "Skupinový demografický scénář: 10 % obyvatel s předpokládaným zdravotním postižením × 2 % potřebujících pobytovou nebo chráněnou formu podpory = 0,002 místa na obyvatele. Jde o návrhové podíly, nikoli statistický normativ; společný výsledek pro domov i chráněné bydlení upravte podle místních údajů."
+    }
+  }
+];
+
+function addSocialAvailabilityCatalogItems(items) {
+  const category = "SOCIÁLNÍ SLUŽBY A DOSTUPNÉ BYDLENÍ";
+  const createRule = (standard) => ({
+    [RULE_HEADERS.id]: `SOC-MMR-${standard.key.toUpperCase()}`,
+    [RULE_HEADERS.equipmentId]: `SOCIAL_${standard.key.toUpperCase()}`,
+    [RULE_HEADERS.equipment]: standard.label,
+    [RULE_HEADERS.area]: "Sociální služby",
+    [RULE_HEADERS.type]: "Doporučený standard dostupnosti",
+    [RULE_HEADERS.condition]: standard.thresholdText,
+    [RULE_HEADERS.description]: standard.details || standard.thresholdText,
+    [RULE_HEADERS.formula]: "Posouzení typu území, populačního prahu a dostupnosti služby.",
+    [RULE_HEADERS.inputs]: "Typ území A/B/C/D; počet obyvatel řešeného území po záměru a spádu; ověřená přítomnost služby.",
+    [RULE_HEADERS.output]: "Doporučení k ověření sídelní dostupnosti; kapacita a cena se počítají samostatně z položkového scénáře.",
+    [RULE_HEADERS.rounding]: "Bez zaokrouhlování.",
+    [RULE_HEADERS.source]: "Výpis standardů sociálních služeb z podkladů projektu.",
+    [RULE_HEADERS.location]: standard.thresholdText,
+    [RULE_HEADERS.url]: "",
+    [RULE_HEADERS.verification]: "Převzato z podkladů projektu; primární publikace a aktuální znění je nutné ověřit.",
+    [RULE_HEADERS.limitation]: "Doporučení přítomnosti není samo o sobě povinností výstavby ani kapacitní kvótou."
+  });
+  for (const standard of SOCIAL_SERVICE_AVAILABILITY_STANDARDS) {
+    if (standard.itemId) {
+      const item = items.find((candidate) => candidate.id === standard.itemId);
+      if (!item) throw new Error(`Chybí katalogová položka ${standard.itemId} pro ${standard.label}.`);
+      item.category = category;
+      item.socialAvailabilityStandard = {
+        ...standard,
+        templateName: displayCatalogItemName(item)
+      };
+      item.socialDemographic = standard.demographic;
+      continue;
+    }
+    const id = `SOCIAL_${standard.key.toUpperCase().replace(/-/g, "_")}`;
+    const template = items.find((item) => item.id === standard.templateId);
+    if (!template) {
+      throw new Error(`Chybí katalogová předloha ${standard.templateId} pro ${standard.label}.`);
+    }
+    items.push({
+      ...template,
+      key: `${id}#1`,
+      id,
+      name: standard.label,
+      category,
+      legalRules: [],
+      recommendedRules: [createRule(standard)],
+      otherRules: [],
+      sourceFormulas: { ...template.sourceFormulas },
+      metricSources: { ...template.metricSources },
+      userAdded: false,
+      socialTemplateName: displayCatalogItemName(template),
+      socialAvailabilityStandard: {
+        ...standard,
+        templateName: displayCatalogItemName(template)
+      },
+      socialDemographic: standard.demographic
+    });
+  }
+}
+
+function addVolunteerFireStationItem(items) {
+  if (items.some((item) => item.id === VOLUNTEER_FIRE_STATION_ID)) return;
+  const template = items.find((item) => item.id === "VYB_16A");
+  if (!template) throw new Error("Chybí položka HZS jako předloha pro zbrojnici JSDH.");
+  items.push({
+    ...template,
+    key: `${VOLUNTEER_FIRE_STATION_ID}#1`,
+    id: VOLUNTEER_FIRE_STATION_ID,
+    name: "Hasičská zbrojnice dobrovolných hasičů (JSDH)",
+    sourceRow: null,
+    sourceFormulas: {},
+    metricSources: {},
+    legalRules: [],
+    recommendedRules: [],
+    otherRules: [],
+    manualCoverageCheck: false
+  });
+}
+
+const UUR_SOCIAL_AREA_REFERENCES = [
+  {
+    label: "Centrum denních služeb / denní stacionář",
+    unitLabel: "míst profesionální pečovatelky",
+    unitsPerThousand: 0.4,
+    floorAreaPerUnit: 14,
+    siteAreaPerUnit: 20
+  },
+  {
+    label: "Domov pro seniory, dům s pečovatelskou službou",
+    unitLabel: "bytů",
+    unitsPerThousand: 2,
+    floorAreaPerUnit: 45,
+    siteAreaPerUnit: 60
+  },
+  {
+    label: "Domov pro osoby se zdravotním postižením",
+    unitLabel: "míst",
+    unitsPerThousand: 1.2,
+    floorAreaPerUnit: 40,
+    siteAreaPerUnit: 60
+  },
+  {
+    label: "Ústav sociální péče pro děti a mládež (všech druhů postižení)",
+    unitLabel: "míst",
+    unitsPerThousand: 1.8,
+    floorAreaPerUnit: 45,
+    siteAreaPerUnit: 60
+  },
+  {
+    label: "Zařízení pro denní pobyt mládeže",
+    unitLabel: "míst",
+    unitsPerThousand: 0.1,
+    floorAreaPerUnit: 30,
+    siteAreaPerUnit: 50
+  },
+  {
+    label: "Azylový dům pro matky/otce s dětmi",
+    unitLabel: "míst pro rodiče",
+    unitsPerThousand: 0.1,
+    floorAreaPerUnit: 50,
+    siteAreaPerUnit: 60
+  },
+  {
+    label: "Ubytovna pro přechodný pobyt (orientační analogie, ne noclehárna)",
+    unitLabel: "lůžek",
+    unitsPerThousand: 0.05,
+    floorAreaPerUnit: 32,
+    siteAreaPerUnit: 40
+  }
+];
 const HEALTHCARE_DEMAND_ITEM_IDS = new Set([
   "VYB_09A_4", "VYB_09B_1", "VYB_09B_2", "VYB_17", "VYB_18", "VYB_19"
 ]);
+const MMR_HEALTHCARE_GROUP_1_ITEM_IDS = new Set([
+  "VYB_09A_4", "VYB_16", "VYB_17", "VYB_18", "VYB_19", "VYB_20"
+]);
+const HEALTHCARE_ACCESS_INPUTS = [
+  { code: "HEALTHCARE_WALK_DISTANCE", label: "Ověřená pěší vzdálenost k ordinaci (A/B/C; limit 600 m)", kind: "number", min: 0, step: 1, unit: "m" },
+  { code: "HEALTHCARE_DRIVE_MINUTES", label: "Ověřený dojezd k ordinaci (D; limit 35 min)", kind: "number", min: 0, step: 0.1, unit: "min" },
+  { code: "HEALTHCARE_ACCESS_SOURCE", label: "Zdroj / datum ověření dostupnosti", kind: "text", unit: "" }
+];
 const TARGETED_PLAN_INPUTS = {
   VYB_01_J: [
     { code: "MODEL_DEMOGRAPHIC_SHARE", label: "Podíl dětí ve věku 0–3 roky", kind: "percent", min: 0, max: 1, step: 0.001, defaultValue: 0.042, unit: "%", note: "Výchozí scénář; nahraďte věkovou strukturou ČSÚ pro spád." },
@@ -674,7 +1074,7 @@ const TARGETED_PLAN_INPUTS = {
     { code: "MODEL_VOLUME_PER_FLOOR_M2", label: "Obestavěný prostor na m² podlahové plochy", kind: "number", min: 0, step: 0.1, defaultValue: 3.3, unit: "m³/m²" },
     { code: "MODEL_PAVED_SHARE", label: "Podíl zpevněné plochy areálu", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 0.25, unit: "%" },
     { code: "MODEL_COST_PER_M3", label: "RTS 2026 – JKSO 801.3 (výukové stavby)", kind: "number", min: 0, step: 1, defaultValue: 12385, unit: "Kč/m³" },
-    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.23, unit: "%" },
+    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.08, unit: "%" },
     { code: "EARLY_CHILDCARE_EXISTING_CAPACITY", label: "Ověřená volná kapacita okolních zařízení", kind: "number", min: 0, step: 1, unit: "míst" },
     { code: "EARLY_CHILDCARE_ACCESS_DISTANCE", label: "Skutečná pěší vzdálenost k zařízení s volnou kapacitou", kind: "number", min: 0, step: 1, unit: "m" },
     { code: "EARLY_CHILDCARE_DATA_SOURCE", label: "Zdroj demografie a kapacit", kind: "text", unit: "" }
@@ -692,7 +1092,7 @@ const TARGETED_PLAN_INPUTS = {
     { code: "MODEL_VOLUME_PER_FLOOR_M2", label: "Obestavěný prostor na m² podlahové plochy", kind: "number", min: 0, step: 0.1, defaultValue: 3.3, unit: "m³/m²" },
     { code: "MODEL_PAVED_SHARE", label: "Podíl zpevněné plochy areálu", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 0.25, unit: "%" },
     { code: "MODEL_COST_PER_M3", label: "RTS 2026 – JKSO 801.1 (zdravotnické stavby)", kind: "number", min: 0, step: 1, defaultValue: 13645, unit: "Kč/m³" },
-    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.23, unit: "%" },
+    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.08, unit: "%" },
     { code: "GYNECOLOGY_WALK_DISTANCE", label: "Skutečná pěší vzdálenost k ordinaci", kind: "number", min: 0, step: 1, unit: "m" },
     { code: "GYNECOLOGY_DRIVE_MINUTES", label: "Ověřený dojezd (typ D)", kind: "number", min: 0, step: 0.1, unit: "min" },
     { code: "GYNECOLOGY_ACCESS_SOURCE", label: "Zdroj / datum ověření kapacity a dostupnosti", kind: "text", unit: "" }
@@ -706,7 +1106,7 @@ const TARGETED_PLAN_INPUTS = {
     { code: "MODEL_VOLUME_PER_FLOOR_M2", label: "Obestavěný prostor na m² podlahové plochy", kind: "number", min: 0, step: 0.1, defaultValue: 3.3, unit: "m³/m²" },
     { code: "MODEL_PAVED_SHARE", label: "Podíl zpevněné plochy areálu", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 0.25, unit: "%" },
     { code: "MODEL_COST_PER_M3", label: "RTS 2026 – JKSO 801.3 (výukové stavby)", kind: "number", min: 0, step: 1, defaultValue: 12385, unit: "Kč/m³" },
-    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.23, unit: "%" },
+    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.08, unit: "%" },
   ],
   VYB_02C_2: [
     { code: "MODEL_DEMOGRAPHIC_SHARE", label: "Modelový podíl nových žáků (analogicky ZŠ I. stupně)", kind: "percent", min: 0, max: 1, step: 0.001, defaultValue: 1 / 22, unit: "%", note: "Scénářový přepočet podle MMR poměru ZŠ I. stupně 1 žák / 22 obyvatel; MMR kvótu žáků ZUŠ nestanoví." },
@@ -717,7 +1117,7 @@ const TARGETED_PLAN_INPUTS = {
     { code: "MODEL_VOLUME_PER_FLOOR_M2", label: "Obestavěný prostor na m² podlahové plochy", kind: "number", min: 0, step: 0.1, defaultValue: 3.3, unit: "m³/m²" },
     { code: "MODEL_PAVED_SHARE", label: "Podíl zpevněné plochy areálu", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 0.25, unit: "%" },
     { code: "MODEL_COST_PER_M3", label: "RTS 2026 – JKSO 801.4 (kultura a osvěta; proxy)", kind: "number", min: 0, step: 1, defaultValue: 14760, unit: "Kč/m³", note: "Cenový proxy pro vzdělávání v ZUŠ; upravte podle konkrétního stavebního programu." },
-    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.23, unit: "%" },
+    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.08, unit: "%" },
   ],
   VYB_17: [
     { code: "MODEL_DEMOGRAPHIC_COEFFICIENT", label: "Demografický koeficient započtené populace", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 1, unit: "%", note: "Podíl obyvatel, ze kterého se odvozuje populační spád ordinace." },
@@ -734,7 +1134,8 @@ const TARGETED_PLAN_INPUTS = {
     { code: "MODEL_VOLUME_PER_FLOOR_M2", label: "Obestavěný prostor na m² podlahové plochy", kind: "number", min: 0.1, step: 0.1, defaultValue: 3.3, unit: "m³/m²" },
     { code: "MODEL_PAVED_SHARE", label: "Podíl zpevněné plochy areálu", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 0.25, unit: "%" },
     { code: "MODEL_COST_PER_M3", label: "RTS 2026 – JKSO 801.1 (zdravotnické stavby)", kind: "number", min: 0, step: 1, defaultValue: 13645, unit: "Kč/m³" },
-    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.23, unit: "%" }
+    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.08, unit: "%" },
+    ...HEALTHCARE_ACCESS_INPUTS
   ],
   VYB_18: [
     { code: "MODEL_DEMOGRAPHIC_COEFFICIENT", label: "Podíl nové populace započtené do poptávky", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 1, unit: "%", note: "MMR uvádí počet obyvatel na lékaře, nikoli počet dětských pacientů; výpočet používá celou populaci." },
@@ -751,7 +1152,8 @@ const TARGETED_PLAN_INPUTS = {
     { code: "MODEL_VOLUME_PER_FLOOR_M2", label: "Obestavěný prostor na m² podlahové plochy", kind: "number", min: 0.1, step: 0.1, defaultValue: 3.3, unit: "m³/m²" },
     { code: "MODEL_PAVED_SHARE", label: "Podíl zpevněné plochy areálu", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 0.25, unit: "%" },
     { code: "MODEL_COST_PER_M3", label: "RTS 2026 – JKSO 801.1 (zdravotnické stavby)", kind: "number", min: 0, step: 1, defaultValue: 13645, unit: "Kč/m³" },
-    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.23, unit: "%" }
+    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.08, unit: "%" },
+    ...HEALTHCARE_ACCESS_INPUTS
   ],
   VYB_19: [
     { code: "MODEL_DEMOGRAPHIC_COEFFICIENT", label: "Demografický koeficient započtené populace", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 1, unit: "%", note: "Podíl obyvatel, ze kterého se odvozuje populační spád ordinace." },
@@ -768,7 +1170,8 @@ const TARGETED_PLAN_INPUTS = {
     { code: "MODEL_VOLUME_PER_FLOOR_M2", label: "Obestavěný prostor na m² podlahové plochy", kind: "number", min: 0.1, step: 0.1, defaultValue: 3.3, unit: "m³/m²" },
     { code: "MODEL_PAVED_SHARE", label: "Podíl zpevněné plochy areálu", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 0.25, unit: "%" },
     { code: "MODEL_COST_PER_M3", label: "RTS 2026 – JKSO 801.1 (zdravotnické stavby)", kind: "number", min: 0, step: 1, defaultValue: 13645, unit: "Kč/m³" },
-    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.23, unit: "%" }
+    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.08, unit: "%" },
+    ...HEALTHCARE_ACCESS_INPUTS
   ],
   VYB_09B_1: [
     { code: "MODEL_DEMOGRAPHIC_COEFFICIENT", label: "Demografický koeficient spádové populace", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 1, unit: "%", note: "Podíl obyvatel zahrnutý do populačního odhadu; místní oborová skladba může vyžadovat úpravu." },
@@ -780,7 +1183,7 @@ const TARGETED_PLAN_INPUTS = {
     { code: "MODEL_VOLUME_PER_FLOOR_M2", label: "Obestavěný prostor na m² podlahové plochy", kind: "number", min: 0.1, step: 0.1, defaultValue: 3.3, unit: "m³/m²" },
     { code: "MODEL_PAVED_SHARE", label: "Podíl zpevněné plochy areálu", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 0.25, unit: "%" },
     { code: "MODEL_COST_PER_M3", label: "RTS 2026 – JKSO 801.1 (zdravotnické stavby)", kind: "number", min: 0, step: 1, defaultValue: 13645, unit: "Kč/m³" },
-    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.23, unit: "%" }
+    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.08, unit: "%" }
   ],
   VYB_09B_2: [
     { code: "MODEL_DEMOGRAPHIC_COEFFICIENT", label: "Demografický koeficient spádové populace", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 1, unit: "%", note: "Podíl obyvatel zahrnutý do populačního odhadu; místní oborová skladba může vyžadovat úpravu." },
@@ -792,7 +1195,7 @@ const TARGETED_PLAN_INPUTS = {
     { code: "MODEL_VOLUME_PER_FLOOR_M2", label: "Obestavěný prostor na m² podlahové plochy", kind: "number", min: 0.1, step: 0.1, defaultValue: 3.3, unit: "m³/m²" },
     { code: "MODEL_PAVED_SHARE", label: "Podíl zpevněné plochy areálu", kind: "percent", min: 0, max: 1, step: 0.01, defaultValue: 0.25, unit: "%" },
     { code: "MODEL_COST_PER_M3", label: "RTS 2026 – JKSO 801.1 (zdravotnické stavby)", kind: "number", min: 0, step: 1, defaultValue: 13645, unit: "Kč/m³" },
-    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.23, unit: "%" }
+    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.08, unit: "%" }
   ],
   VYB_09D: [
     { code: "MODEL_POPULATION_PER_VEHICLE", label: "Obyvatel na 1 výjezdový vůz (scénář)", kind: "number", min: 1, step: 1000, defaultValue: 50000, unit: "obyvatel/vůz" },
@@ -804,9 +1207,9 @@ const TARGETED_PLAN_INPUTS = {
     { code: "MODEL_PAVED_PER_UNIT", label: "Zpevněná plocha na výjezdový vůz", kind: "number", min: 0, step: 1, defaultValue: 100, unit: "m²/vůz" },
     { code: "MODEL_VOLUME_PER_FLOOR_M2", label: "Obestavěný prostor na m² podlahové plochy", kind: "number", min: 0, step: 0.1, defaultValue: 4, unit: "m³/m²" },
     { code: "MODEL_COST_PER_M3", label: "RTS 2026 – JKSO 801.6 (provozní stavby; proxy)", kind: "number", min: 0, step: 1, defaultValue: 12255, unit: "Kč/m³" },
-    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.23, unit: "%" },
+    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.08, unit: "%" },
     { code: "ZZS_COVERED_POPULATION", label: "Obyvatelé projektu a spádu dosažitelní ze stávající základny do 20 min", kind: "number", min: 0, step: 1, unit: "obyvatel" },
-    { code: "ZZS_MAX_RESPONSE_MINUTES", label: "Ověřená nejdelší dojezdová doba v projektovém spádu", kind: "number", min: 0, step: 0.1, unit: "min" },
+    { code: "ZZS_MAX_RESPONSE_MINUTES", label: "Ověřený dojezd ZZS (zákonná mez 20 min)", kind: "number", min: 0, step: 0.1, unit: "min", note: "Zákon č. 374/2011 Sb., § 5: nejpozději do 20 minut od převzetí pokynu k výjezdu, s výjimkami stanovenými zákonem." },
     { code: "ZZS_COVERAGE_SOURCE", label: "Zdroj / datum ověření krajského plánu nebo GIS analýzy", kind: "text", unit: "" }
   ],
   VYB_16A: [
@@ -819,9 +1222,9 @@ const TARGETED_PLAN_INPUTS = {
     { code: "MODEL_PAVED_PER_UNIT", label: "Zpevněná plocha na požární vozidlo", kind: "number", min: 0, step: 1, defaultValue: 100, unit: "m²/vozidlo" },
     { code: "MODEL_VOLUME_PER_FLOOR_M2", label: "Obestavěný prostor na m² podlahové plochy", kind: "number", min: 0, step: 0.1, defaultValue: 4.2, unit: "m³/m²" },
     { code: "MODEL_COST_PER_M3", label: "RTS 2026 – JKSO 801.6 (provozní stavby; proxy)", kind: "number", min: 0, step: 1, defaultValue: 12255, unit: "Kč/m³" },
-    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.23, unit: "%" },
+    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.08, unit: "%" },
     { code: "HZS_COVERED_POPULATION", label: "Obyvatelé spádu pokrytí stávající jednotkou", kind: "number", min: 0, step: 1, unit: "obyvatel" },
-    { code: "HZS_RESPONSE_MINUTES", label: "Ověřená doba příjezdu do řešeného území", kind: "number", min: 0, step: 0.1, unit: "min" },
+    { code: "HZS_RESPONSE_MINUTES", label: "Ověřený zásahový dojezd stanice (A/B ≤ 7 min; C/D ≤ 15 min)", kind: "number", min: 0, step: 0.1, unit: "min", note: "Zadejte skutečný dojezd podle požárního poplachového plánu; jde o silniční zásahový dojezd, nikoli pěší vzdálenost." },
     { code: "HZS_AVAILABLE_VEHICLES", label: "Ověřený počet dostupných vozidel / družstev", kind: "number", min: 0, step: 1, unit: "vozidel" },
     { code: "HZS_COVERAGE_SOURCE", label: "Zdroj / datum ověření požárního poplachového plánu", kind: "text", unit: "" }
   ],
@@ -834,8 +1237,8 @@ const TARGETED_PLAN_INPUTS = {
     { code: "MODEL_PAVED_PER_BASE", label: "Zpevněná plocha služebny", kind: "number", min: 0, step: 1, defaultValue: 500, unit: "m²/služebnu" },
     { code: "MODEL_VOLUME_PER_FLOOR_M2", label: "Obestavěný prostor na m² podlahové plochy", kind: "number", min: 0, step: 0.1, defaultValue: 4, unit: "m³/m²" },
     { code: "MODEL_COST_PER_M3", label: "RTS 2026 – JKSO 801.6 (správa a administrativa; proxy)", kind: "number", min: 0, step: 1, defaultValue: 12255, unit: "Kč/m³" },
-    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.23, unit: "%" },
-    { code: "POLICE_RESPONSE_MINUTES", label: "Ověřená dojezdová doba hlídky do území", kind: "number", min: 0, step: 0.1, unit: "min" },
+    { code: "MODEL_COST_SURCHARGE", label: "VRN a rozpočtová rezerva", kind: "percent", min: 0, max: 3, step: 0.01, defaultValue: 0.08, unit: "%" },
+    { code: "POLICE_RESPONSE_MINUTES", label: "Ověřená doba zásahu hlídky (A/B ≤ 10 min; C ≤ 15 min; D se neměří)", kind: "number", min: 0, step: 0.1, unit: "min", note: "Doporučení vnitřních metodik policie, nikoli metodiky MMR ani zákonný standard." },
     { code: "POLICE_COVERAGE_SOURCE", label: "Zdroj / datum ověření pokrytí policie", kind: "text", unit: "" }
   ],
   VYB_17B: [
@@ -854,6 +1257,40 @@ const TARGETED_PLAN_INPUTS = {
     { code: "SHELTER_VERIFICATION_SOURCE", label: "Zdroj / datum ověření plánu, kapacity a trasy", kind: "text", unit: "" }
   ]
 };
+const VOLUNTEER_FIRE_STATION_HALF_AREA_CODES = new Set([
+  "MODEL_BASE_AREA",
+  "MODEL_AREA_PER_UNIT",
+  "MODEL_SITE_PER_UNIT",
+  "MODEL_PAVED_PER_BASE",
+  "MODEL_PAVED_PER_UNIT"
+]);
+const VOLUNTEER_FIRE_STATION_INPUT_CODES = {
+  HZS_COVERED_POPULATION: "JSDH_COVERED_POPULATION",
+  HZS_AVAILABLE_VEHICLES: "JSDH_AVAILABLE_VEHICLES",
+  HZS_COVERAGE_SOURCE: "JSDH_COVERAGE_SOURCE"
+};
+TARGETED_PLAN_INPUTS[VOLUNTEER_FIRE_STATION_ID] = [
+  ...TARGETED_PLAN_INPUTS.VYB_16A
+    .filter((field) => field.code !== "HZS_RESPONSE_MINUTES")
+    .map((field) => ({
+      ...field,
+      code: VOLUNTEER_FIRE_STATION_INPUT_CODES[field.code] || field.code,
+      label: field.code === "HZS_COVERED_POPULATION"
+        ? "Obyvatelé spádu pokrytí stávající jednotkou JSDH"
+        : field.code === "HZS_AVAILABLE_VEHICLES"
+          ? "Ověřený počet dostupných vozidel / družstev JSDH"
+          : field.code === "HZS_COVERAGE_SOURCE"
+            ? "Zdroj / datum ověření pěší dostupnosti a pokrytí JSDH"
+            : field.label.replaceAll("stanici", "zbrojnici").replaceAll("stanice", "zbrojnice"),
+      unit: field.unit.replaceAll("stanici", "zbrojnici"),
+      defaultValue: VOLUNTEER_FIRE_STATION_HALF_AREA_CODES.has(field.code)
+        ? field.defaultValue / 2 : field.defaultValue,
+      note: VOLUNTEER_FIRE_STATION_HALF_AREA_CODES.has(field.code)
+        ? "Výchozí scénář používá polovinu výměry HZS; předpoklad lze upravit podle konkrétní zbrojnice."
+        : field.note
+    })),
+  { code: "JSDH_WALK_DISTANCE", label: "Ověřená skutečná pěší vzdálenost k existující zbrojnici (limit 1 000 m)", kind: "number", min: 0, step: 1, unit: "m" }
+];
 const TARGETED_PLAN_INPUT_CODES = new Set(
   Object.values(TARGETED_PLAN_INPUTS).flat().map((field) => field.code)
 );
@@ -869,6 +1306,7 @@ const TARGETED_FACILITY_ASSUMPTIONS = {
   VYB_09B_2: { unitLabel: "ambulancí", rateSource: "RTS 2026, JKSO 801.1 – budovy pro zdravotní péči" },
   VYB_09D: { unitLabel: "výjezdových vozů", rateSource: "RTS 2026, JKSO 801.6 – správní/provozní budovy (cenový proxy)" },
   VYB_16A: { unitLabel: "požárních vozidel", rateSource: "RTS 2026, JKSO 801.6 – správní/provozní budovy (cenový proxy)" },
+  [VOLUNTEER_FIRE_STATION_ID]: { unitLabel: "požárních vozidel", rateSource: "RTS 2026, JKSO 801.6 – provozní stavby (cenový proxy; poloviční výměra vůči modelu HZS)" },
   VYB_17A: { unitLabel: "policejních míst", rateSource: "RTS 2026, JKSO 801.6 – budovy pro řízení, správu a administrativu" },
   VYB_17B: { unitLabel: "osob", rateSource: "Scénářový odhad mimo RTS; samostatná sazba úkrytu v RTS 2026 není uvedena" }
 };
@@ -883,6 +1321,7 @@ const TARGETED_RESULT_METRIC_LABELS = {
   VYB_09B_1: ["Demograficky započtená populace z přírůstku záměru", "Požadovaná modelová potřeba", "Poptávka nepokrytá ověřenou kapacitou", "Modelový počet ambulancí", "Modelová potřeba –", "Orientační užitná plocha", "Orientační obestavěný prostor", "Orientační investice včetně VRN a rezervy"],
   VYB_09B_2: ["Demograficky započtená populace z přírůstku záměru", "Požadovaná modelová potřeba", "Poptávka nepokrytá ověřenou kapacitou", "Modelový počet ambulancí", "Modelová potřeba –", "Orientační užitná plocha", "Orientační obestavěný prostor", "Orientační investice včetně VRN a rezervy"],
   VYB_16A: ["Doplňkový počet vozidel k zajištění", "Modelová potřeba nových stanic po kontrole dojezdu", "Modelový počet hasičských stanic", "Orientační užitná plocha", "Orientační celková podlahová plocha", "Orientační zastavěná plocha", "Orientační obestavěný prostor", "Orientační plocha areálu", "Orientační zpevněná plocha", "Orientační investice včetně VRN a rezervy"],
+  [VOLUNTEER_FIRE_STATION_ID]: ["Ověřená pěší vzdálenost k existující zbrojnici", "Pěší dostupnost existující zbrojnice", "Doplňkový počet vozidel k zajištění", "Modelová potřeba nových zbrojnic po kontrole pěší dostupnosti", "Modelový počet hasičských zbrojnic JSDH", "Orientační užitná plocha", "Orientační celková podlahová plocha", "Orientační zastavěná plocha", "Orientační obestavěný prostor", "Orientační plocha areálu", "Orientační zpevněná plocha", "Orientační investice včetně VRN a rezervy"],
   VYB_09D: ["Modelová poptávka po výjezdových vozech", "Modelová potřeba nových základen po kontrole dojezdu", "Modelový počet výjezdových základen", "Orientační užitná plocha", "Orientační celková podlahová plocha", "Orientační zastavěná plocha", "Orientační obestavěný prostor", "Orientační plocha areálu", "Orientační zpevněná plocha", "Orientační investice včetně VRN a rezervy"],
   VYB_17A: ["Scénářový počet policistů k zajištění", "Modelová potřeba nových služeben", "Modelový počet policejních služeben", "Orientační užitná plocha", "Orientační celková podlahová plocha", "Orientační zastavěná plocha", "Orientační obestavěný prostor", "Orientační plocha areálu", "Orientační zpevněná plocha", "Orientační investice včetně VRN a rezervy"],
   VYB_17B: ["Poptávka nepokrytá ověřenou kapacitou úkrytů", "Modelový počet úkrytových modulů", "Orientační užitná plocha", "Orientační obestavěný prostor", "Orientační investice včetně VRN a rezervy"]
@@ -1046,11 +1485,13 @@ const state = {
   capacityEdits: {},
   overrides: {},
   reviewChecks: {},
+  socialServiceChecks: {},
   standardComparisons: {},
   healthChecks: {},
   parkingShares: {},
   realizationSelections: {},
   itemEstimateValues: {},
+  brnoInputs: {},
   scenarioChanged: false,
   inputsChanged: false,
   persistenceError: false
@@ -1076,7 +1517,6 @@ const elements = {
   resetInputs: document.querySelector("#reset-inputs"),
   projectInputGrid: document.querySelector("#project-input-grid"),
   derivedGrid: document.querySelector("#derived-grid"),
-  secondaryInputGrid: document.querySelector("#secondary-input-grid"),
   search: document.querySelector("#search-input"),
   categoryList: document.querySelector("#category-list"),
   selectedCategoryTitle: document.querySelector("#selected-category-title"),
@@ -1092,6 +1532,8 @@ const elements = {
   reviewList: document.querySelector("#review-list"),
   reserveCount: document.querySelector("#reserve-count"),
   reserveList: document.querySelector("#reserve-list"),
+  brnoCount: document.querySelector("#brno-count"),
+  brnoList: document.querySelector("#brno-list"),
   requirementColumns: document.querySelector(".requirement-columns"),
   integrityWarning: document.querySelector("#integrity-warning")
 };
@@ -1519,7 +1961,7 @@ function readWorkbook(file) {
       const item = items.at(-1);
       if (USER_ADDED_ITEM_IDS.has(id)) {
         item.userAdded = true;
-        item.coverage = "Uživatelská položka — bez podkladu MMR nebo zákonné povinnosti";
+        item.coverage = "Uživatelská položka";
       }
       item.pavedArea = pavedAreaDetails.value ?? numericOrNull(record[MODEL_HEADERS.pavedArea]);
       if (CAPACITY_QUANTITY_IDS.has(id) && item.demand !== null) {
@@ -1535,7 +1977,7 @@ function readWorkbook(file) {
       key: `${HEATING_BOILER_ID}#1`,
       id: HEATING_BOILER_ID,
       name: "Kotelna pro ústřední vytápění",
-      category: TECHNICAL_INFRASTRUCTURE_CATEGORY,
+      category: "OSTATNÍ / UŽIVATELSKÉ SCÉNÁŘE",
       unit: "kW tepelného výkonu",
       demand: null,
       capacityCount: null,
@@ -1556,13 +1998,14 @@ function readWorkbook(file) {
       sourceRow: null,
       sourceFormulas: {},
       metricSources: {},
-      coverage: "Vloženo uživatelem — bez zákonného podkladu",
+      coverage: "Uživatelská položka",
       legalRules: [],
       recommendedRules: [],
       otherRules: [],
       manualCoverageCheck: false,
       userAdded: true
     });
+    addVolunteerFireStationItem(items);
     if (!items.length) throw new Error("V listu Model_Vybavenosti nebyly nalezeny položky VYB_.");
 
     const rulesByEquipment = new Map();
@@ -1621,11 +2064,32 @@ function readWorkbook(file) {
         else if (isRecommendedRule(rule)) item.recommendedRules.push(rule);
         else item.otherRules.push(rule);
       }
+      if (item.id === "VYB_09D") {
+        item.legalRules.push({
+          [RULE_HEADERS.id]: "ZZS-LEG-001",
+          [RULE_HEADERS.equipmentId]: item.id,
+          [RULE_HEADERS.equipment]: item.name,
+          [RULE_HEADERS.area]: "Zdravotnictví",
+          [RULE_HEADERS.type]: "Zákonný požadavek na dostupnost",
+          [RULE_HEADERS.condition]: "Dostupnost zdravotnické záchranné služby",
+          [RULE_HEADERS.description]: "Čas dojezdu výjezdové skupiny nejpozději do 20 minut od převzetí pokynu k výjezdu, s výjimkami stanovenými zákonem.",
+          [RULE_HEADERS.formula]: "Ověřený dojezd ≤ 20 minut.",
+          [RULE_HEADERS.inputs]: "Ověřený dojezd v minutách; doložené územní pokrytí.",
+          [RULE_HEADERS.output]: "Posouzení dostupnosti ZZS",
+          [RULE_HEADERS.rounding]: "Bez zaokrouhlení",
+          [RULE_HEADERS.source]: "Zákon č. 374/2011 Sb., o zdravotnické záchranné službě",
+          [RULE_HEADERS.location]: "§ 5 – dostupnost zdravotnické záchranné služby",
+          [RULE_HEADERS.url]: "https://www.e-sbirka.cz/sb/2011/374",
+          [RULE_HEADERS.verification]: "Zákonný limit; aplikace pouze provádí plánovací kontrolu zadaných údajů.",
+          [RULE_HEADERS.limitation]: "Zákonné výjimky a krajský plán pokrytí musí být posouzeny poskytovatelem ZZS; limit sám o sobě nezakládá povinnost stavět novou základnu."
+        });
+      }
       if (item.id === "VYB_04B") item.recommendedRules.push(MMR_PUBLIC_SPACE_RULE);
       if (MMR_SPECIALIST_RULES[item.id]) {
         item.recommendedRules.push(MMR_SPECIALIST_RULES[item.id]);
       }
     }
+    addSocialAvailabilityCatalogItems(items);
 
     const inputRows = worksheetRows(workbook.Sheets.Vstupy_a_KPI);
     const primaryDefaults = {};
@@ -1749,7 +2213,9 @@ function getProjectViewState() {
     ["legal", elements.legalList],
     ["infrastructure", elements.infrastructureList],
     ["recommended", elements.recommendedList],
-    ["review", elements.reviewList]
+    ["review", elements.reviewList],
+    ["reserve", elements.reserveList],
+    ["brno", elements.brnoList]
   ]) {
     const button = elements.requirementColumns.querySelector(`[data-collapse-list="${name}"]`);
     collapsedLists[name] = button
@@ -1771,17 +2237,19 @@ function getProjectViewState() {
 
 function getProjectScenarioData() {
   return {
-    schemaVersion: 12,
+    schemaVersion: 17,
     primaryValues: state.primaryValues,
     secondaryValues: state.secondaryValues,
     capacityEdits: state.capacityEdits,
     overrides: state.overrides,
     reviewChecks: state.reviewChecks,
+    socialServiceChecks: state.socialServiceChecks,
     standardComparisons: state.standardComparisons,
     healthChecks: state.healthChecks,
     parkingShares: state.parkingShares,
     realizationSelections: state.realizationSelections,
     itemEstimateValues: state.itemEstimateValues,
+    brnoInputs: state.brnoInputs,
     scenarioChanged: state.scenarioChanged,
     inputsChanged: state.inputsChanged,
     ...getProjectViewState()
@@ -1796,6 +2264,7 @@ function applyProjectScenarioData(data) {
     savedPrimaryValues.O_sidlo = 1500;
   }
   state.primaryValues = { ...state.primaryValues, ...savedPrimaryValues };
+  delete state.primaryValues.SOCIAL_MUNICIPALITY_POPULATION;
   state.secondaryValues = { ...state.secondaryValues, ...data.secondaryValues };
   if (savedSchemaVersion < 10
     && numericOrNull(state.secondaryValues.POLY_DISCOUNT_COEFFICIENT) === 0.6) {
@@ -1804,11 +2273,81 @@ function applyProjectScenarioData(data) {
   state.capacityEdits = data.capacityEdits || {};
   state.overrides = data.overrides || {};
   state.reviewChecks = data.reviewChecks || {};
+  state.socialServiceChecks = data.socialServiceChecks
+    && typeof data.socialServiceChecks === "object" ? data.socialServiceChecks : {};
+  const serviceCoverage = state.socialServiceChecks.coverage;
+  if (serviceCoverage && typeof serviceCoverage === "object"
+    && serviceCoverage["community-services"]
+    && !serviceCoverage["ambulatory-social-care"]) {
+    serviceCoverage["ambulatory-social-care"] = serviceCoverage["community-services"];
+  }
   state.standardComparisons = data.standardComparisons || {};
   state.healthChecks = data.healthChecks || {};
   state.parkingShares = data.parkingShares || {};
   state.realizationSelections = data.realizationSelections || {};
   state.itemEstimateValues = data.itemEstimateValues || {};
+  if (savedSchemaVersion < 16) {
+    for (const item of state.items) {
+      if (!item.socialDemographic) continue;
+      const values = state.itemEstimateValues[item.key];
+      const savedCoefficient = numericOrNull(values?.SOCIAL_DEMOGRAPHIC_COEFFICIENT);
+      if (savedCoefficient !== null) {
+        values.SOCIAL_DEMOGRAPHIC_COEFFICIENT = savedSchemaVersion < 15
+          ? savedCoefficient * (item.id === "VYB_06B" ? 2
+            : item.id === "SOCIAL_DISABILITY_SERVICES" ? 1.2 : 0) / 1000
+          : savedCoefficient / 1000;
+      }
+    }
+  }
+  if (savedSchemaVersion < 17) {
+    const previousDefaults = new Map([
+      ["VYB_06A", 0.0001],
+      ["SOCIAL_LOW_THRESHOLD_DAY_CENTER", 0.0001],
+      ["SOCIAL_AMBULATORY_SOCIAL_CARE", 0.0001],
+      ["SOCIAL_NIGHT_SHELTER", 0.00005],
+      ["SOCIAL_CRISIS_SERVICES", 0.0001],
+      ["SOCIAL_HALFWAY_HOUSE", 0.00005],
+      ["VYB_06B", 0.002],
+      ["SOCIAL_DISABILITY_SERVICES", 0.0012]
+    ]);
+    for (const item of state.items) {
+      const previousDefault = previousDefaults.get(item.id);
+      const values = state.itemEstimateValues[item.key];
+      const savedCoefficient = numericOrNull(values?.SOCIAL_DEMOGRAPHIC_COEFFICIENT);
+      if (item.socialDemographic && previousDefault !== undefined
+        && savedCoefficient !== null && Math.abs(savedCoefficient - previousDefault) < 1e-9) {
+        values.SOCIAL_DEMOGRAPHIC_COEFFICIENT = item.socialDemographic.coefficient;
+      }
+    }
+  }
+  state.brnoInputs = data.brnoInputs && typeof data.brnoInputs === "object"
+    ? data.brnoInputs : {};
+  const costSurchargeCodes = new Set([
+    "ITEM_COST_SURCHARGE", "MODEL_COST_SURCHARGE", "ALT_COST_SURCHARGE", "COST_SURCHARGE"
+  ]);
+  for (const values of Object.values(state.itemEstimateValues)) {
+    if (!values || typeof values !== "object") continue;
+    const storedSurchargeCodes = Object.keys(values).filter((code) =>
+      /^ITEM_COST_SURCHARGE_(LEGAL|RECOMMENDED)$/.test(code));
+    for (const code of [...costSurchargeCodes, ...storedSurchargeCodes]) {
+      if (numericOrNull(values[code]) === 0.23) values[code] = 0.08;
+    }
+  }
+  for (const key of Object.keys(state.brnoInputs)) {
+    if (key.endsWith("-cost-surcharge")
+      && numericOrNull(state.brnoInputs[key]) === 0.23) state.brnoInputs[key] = 0.08;
+  }
+  for (const key of REMOVED_BRNO_REQUIREMENT_KEYS) {
+    delete state.realizationSelections[key];
+    delete state.capacityEdits[key];
+  }
+  for (const key of Object.keys(state.brnoInputs)) {
+    if (/^(cars|bikes)-area-|^(cars|bikes)-dwelling-units$/.test(key)
+      || ["setback-distance", "setback-no-exception",
+        "stormwater-area", "stormwater-custom-limit"].includes(key)) {
+      delete state.brnoInputs[key];
+    }
+  }
   if (savedSchemaVersion < 11) {
     const legalParking = state.items.find((item) => item.id === RESIDENT_PARKING_ID);
     const oldRecommendedKey = legalParking
@@ -1864,7 +2403,16 @@ function applyProjectScenarioData(data) {
   if (data.theme === "day" || data.theme === "night") applyTheme(data.theme);
   state.selectedCategory = state.categories.includes(data.selectedCategory) ? data.selectedCategory : "";
   state.selectedItemKey = state.items.some((item) => item.key === data.selectedItemKey)
+    && !REMOVED_SOCIAL_SERVICE_ITEM_IDS.has(
+      state.items.find((item) => item.key === data.selectedItemKey)?.id)
     ? data.selectedItemKey : "";
+  state.items.filter((item) => REMOVED_SOCIAL_SERVICE_ITEM_IDS.has(item.id))
+    .forEach((item) => {
+      delete state.realizationSelections[item.key];
+      delete state.capacityEdits[item.key];
+      delete state.overrides[item.key];
+      delete state.itemEstimateValues[item.key];
+    });
   if (state.selectedItemKey) {
     state.selectedCategory = state.items.find((item) => item.key === state.selectedItemKey)?.category || "";
   }
@@ -1923,6 +2471,19 @@ function getPrimary(code) {
   return state.primaryValues[code];
 }
 
+function getSelectedStandardMode() {
+  const value = getPrimary("REZIM_STD");
+  return value === "MAX_STANDARD" || value === "STANDARD" ? value : "ZAKON";
+}
+
+function isCompleteStandardMode() {
+  return getSelectedStandardMode() !== "ZAKON";
+}
+
+function isHighestStandardMode() {
+  return getSelectedStandardMode() === "MAX_STANDARD";
+}
+
 function getSecondary(code) {
   return state.secondaryValues[code];
 }
@@ -1975,7 +2536,7 @@ function derivedValues() {
         ? households * floorPerHome : null,
     O_uzemi_cil: projectedAreaPopulation,
     O_sidlo: projectedAreaPopulation,
-    O_prah: projectedAreaPopulation !== null && catchment !== null ? projectedAreaPopulation + catchment : null,
+    O_prah: projectedAreaPopulation !== null ? projectedAreaPopulation + (catchment ?? 0) : null,
     rho_hruba: population !== null && land > 0 ? population / land : null,
     rho_cista: population !== null && housingLand > 0 ? population / housingLand : null,
     k_tvar: shape?.air ?? null,
@@ -2112,7 +2673,6 @@ function renderProjectInputs() {
     elements.projectInputGrid.append(group);
   }
   renderDerivedInputs();
-  renderSecondaryInputs();
   const derivedDetails = document.querySelector(".derived-details");
   if (derivedDetails) derivedDetails.open = state.derivedDetailsOpen;
   elements.resetInputs.disabled = false;
@@ -2122,6 +2682,14 @@ function renderProjectInputs() {
 function renderDerivedInputs() {
   const values = derivedValues();
   elements.derivedGrid.replaceChildren();
+  const editableInputs = createElement("div", "derived-editable-inputs");
+  editableInputs.append(createElement("h3", "secondary-heading", "Vstupy pro odhad nových bytů"));
+  const editableFields = createElement("div", "derived-editable-fields");
+  for (const field of DERIVED_PARAMETER_INPUTS) {
+    editableFields.append(createInputControl(field, getPrimary(field.code)));
+  }
+  editableInputs.append(editableFields);
+  elements.derivedGrid.append(editableInputs);
   for (const field of DERIVED_INPUTS) {
     const descriptor = inputDescriptor(field.code);
     const card = createElement("div", "derived-card");
@@ -2137,19 +2705,6 @@ function renderDerivedInputs() {
 
 function isDimensionlessUnit(unit) {
   return String(unit ?? "").toLocaleLowerCase("cs").includes("bezrozměrný");
-}
-
-function renderSecondaryInputs() {
-  elements.secondaryInputGrid.replaceChildren();
-  const heading = createElement("h3", "secondary-heading", "Další výpočtové předpoklady");
-  elements.secondaryInputGrid.append(heading);
-  const grid = createElement("div", "secondary-fields");
-  const groupedCodes = new Set(PROJECT_INPUT_GROUPS.flatMap((group) =>
-    group.fields.map((definition) => definition.code || definition.field?.code)));
-  for (const field of SECONDARY_INPUTS.filter((candidate) => !groupedCodes.has(candidate.code))) {
-    grid.append(createInputControl(field, getSecondary(field.code), true));
-  }
-  elements.secondaryInputGrid.append(grid);
 }
 
 function updateScenarioStatus() {
@@ -2211,6 +2766,7 @@ function handleInputChange(event) {
 function updateTargetedPlanInput(event) {
   const control = event.target.closest('[data-input-scope="itemEstimate"][data-input-code]');
   if (!control || !TARGETED_PLAN_INPUT_CODES.has(control.dataset.inputCode)) return false;
+  const viewport = captureRequirementViewport(control);
   const item = state.items.find((candidate) => candidate.key === control.dataset.itemKey);
   if (!item) return true;
   const itemField = (TARGETED_PLAN_INPUTS[item.id] || [])
@@ -2284,7 +2840,8 @@ function updateTargetedPlanInput(event) {
       calculation.append(...updatedLines);
     }
     const quantity = card.querySelector(".requirement-quantity");
-    if (quantity) quantity.textContent = getTargetedPlanSummaryText(item, estimate);
+    if (quantity) quantity.textContent = formatRequirementSummaryQuantity(
+      item, kind, getTargetedPlanSummaryText(item, estimate));
     const cost = estimate.metrics.find((metric) => metric.label.includes("investice"))?.value
       ?? estimate.cost;
     const investment = card.querySelector(".requirement-investment");
@@ -2301,12 +2858,14 @@ function updateTargetedPlanInput(event) {
     }
   }
   updateScenarioStatus();
+  restoreRequirementViewport(viewport, false);
   return true;
 }
 
 function updateSpecialBuildingParkingInput(event) {
   const control = event.target.closest("[data-special-parking-input]");
   if (!control) return;
+  const viewport = captureRequirementViewport(control);
   const displayedValue = Number(control.value);
   const min = Number(control.min);
   const max = control.max === "" ? Number.POSITIVE_INFINITY : Number(control.max);
@@ -2324,6 +2883,7 @@ function updateSpecialBuildingParkingInput(event) {
   saveScenario(false);
   renderRequirements();
   restoreRequirementDisclosureState(disclosureState);
+  restoreRequirementViewport(viewport);
 }
 
 function captureRequirementDisclosureState() {
@@ -2333,6 +2893,55 @@ function captureRequirementDisclosureState() {
     open: card.open,
     sections: [...card.querySelectorAll("details")].map((details) => details.open)
   }));
+}
+
+function captureRequirementViewport(target) {
+  const card = target?.closest(".requirement-card");
+  const list = card?.closest(".requirement-list");
+  const active = document.activeElement;
+  const descriptor = active?.dataset?.capacityField
+    ? {
+      recordId: active.dataset.recordId,
+      capacityField: active.dataset.capacityField
+    }
+    : active?.dataset?.capacitySatisfactionItemKey
+      ? { satisfactionKey: active.dataset.capacitySatisfactionItemKey }
+      : active?.dataset?.specialParkingInput
+        ? { specialParkingInput: active.dataset.specialParkingInput }
+      : active?.dataset?.inputCode && active?.dataset?.itemKey
+        ? { inputCode: active.dataset.inputCode, itemKey: active.dataset.itemKey }
+      : null;
+  return {
+    scrollY: window.scrollY,
+    listId: list?.id,
+    listScrollTop: list?.scrollTop ?? null,
+    descriptor
+  };
+}
+
+function restoreRequirementViewport(viewport, restoreFocus = true) {
+  requestAnimationFrame(() => {
+    const list = viewport.listId ? document.getElementById(viewport.listId) : null;
+    if (list && viewport.listScrollTop !== null) list.scrollTop = viewport.listScrollTop;
+    window.scrollTo(0, viewport.scrollY);
+    if (!restoreFocus || !viewport.descriptor) return;
+    const control = viewport.descriptor.satisfactionKey
+      ? [...document.querySelectorAll("[data-capacity-satisfaction-item-key]")]
+        .find((candidate) => candidate.dataset.capacitySatisfactionItemKey
+          === viewport.descriptor.satisfactionKey)
+      : viewport.descriptor.specialParkingInput
+        ? [...document.querySelectorAll("[data-special-parking-input]")]
+          .find((candidate) => candidate.dataset.specialParkingInput
+            === viewport.descriptor.specialParkingInput)
+        : viewport.descriptor.inputCode
+          ? [...document.querySelectorAll("[data-input-code][data-item-key]")]
+            .find((candidate) => candidate.dataset.itemKey === viewport.descriptor.itemKey
+              && candidate.dataset.inputCode === viewport.descriptor.inputCode)
+          : [...document.querySelectorAll("[data-record-id][data-capacity-field]")]
+            .find((candidate) => candidate.dataset.recordId === viewport.descriptor.recordId
+              && candidate.dataset.capacityField === viewport.descriptor.capacityField);
+    control?.focus({ preventScroll: true });
+  });
 }
 
 function restoreRequirementDisclosureState(disclosureState) {
@@ -2367,7 +2976,8 @@ function categoryShape(category) {
 function matchingItems() {
   const query = state.search.toLocaleLowerCase("cs").trim();
   return state.items.filter((item) => {
-    if (HIDDEN_DUPLICATE_ITEM_IDS.has(item.id)) return false;
+    if (HIDDEN_DUPLICATE_ITEM_IDS.has(item.id)
+      || REMOVED_SOCIAL_SERVICE_ITEM_IDS.has(item.id)) return false;
     if (state.selectedCategory && item.category !== state.selectedCategory) return false;
     if (state.selectedItemKey && item.key !== state.selectedItemKey) return false;
     if (!query) return true;
@@ -2380,7 +2990,8 @@ function matchingItems() {
 
 function renderCategories() {
   elements.categoryList.replaceChildren();
-  const catalogItems = state.items.filter((item) => !HIDDEN_DUPLICATE_ITEM_IDS.has(item.id));
+  const catalogItems = state.items.filter((item) => !HIDDEN_DUPLICATE_ITEM_IDS.has(item.id)
+    && !REMOVED_SOCIAL_SERVICE_ITEM_IDS.has(item.id));
   const realizationPlan = getRealizationPlan();
   const realizationSummary = createElement("div", "realization-summary");
   realizationSummary.append(createElement("strong", "",
@@ -2437,6 +3048,7 @@ function renderCategories() {
     categoryItems.forEach((item) => {
       const selected = realizationPlan.selectedKeys.has(item.key);
       const standardInactive = isMmrRequirementInactive(item);
+      const visuallyInactive = standardInactive;
       const capacitySatisfied = state.capacityEdits[item.key]?.satisfiesNearbyCapacity === true;
       const reserveUnavailable = item.id === RESIDENT_PARKING_RESERVE_ID
         && !getSelectedResidentParkingBase();
@@ -2445,13 +3057,13 @@ function renderCategories() {
         `realization-select-label category-${categoryIndex(category)} shape-${shape}`);
       const selection = document.createElement("input");
       selection.type = "checkbox";
-      selection.disabled = standardInactive || capacitySatisfied || reserveUnavailable;
+      selection.disabled = capacitySatisfied || reserveUnavailable;
       selection.checked = selected;
       selection.value = selected ? "1" : "0";
       selection.dataset.realizationItemKey = item.key;
       selection.setAttribute("aria-label", `${selected ? "Zrušit výběr" : "Vybrat"}: ${displayCatalogItemName(item)}`);
       selection.title = standardInactive
-        ? "Pro tento typ území nebo populační práh metodika standard nestanoví."
+        ? getInactiveRecommendationText(item)
         : capacitySatisfied
           ? "Uživatel potvrdil dostatečnou kapacitu v okolí."
           : reserveUnavailable
@@ -2459,19 +3071,14 @@ function renderCategories() {
           : "Označit tuto položku (hodnota 1), nebo její výběr zrušit (hodnota 0).";
       selectionLabel.append(selection);
       const itemButton = createElement("button",
-        `category-equipment-button${state.selectedItemKey === item.key ? " is-active" : ""}${selected ? " is-realization-selected" : ""}${capacitySatisfied ? " is-capacity-satisfied" : ""}${standardInactive || reserveUnavailable ? " is-standard-inactive" : ""}`,
+        `category-equipment-button${state.selectedItemKey === item.key ? " is-active" : ""}${selected ? " is-realization-selected" : ""}${capacitySatisfied ? " is-capacity-satisfied" : ""}${visuallyInactive || reserveUnavailable ? " is-standard-inactive" : ""}`,
         displayCatalogItemName(item));
       itemButton.type = "button";
       itemButton.dataset.itemKey = item.key;
-      if (standardInactive) itemButton.title = "Tato položka není předmětem standardu MMR pro zvolený typ území / počet obyvatel.";
+      if (standardInactive) itemButton.title = getInactiveRecommendationText(item);
       if (reserveUnavailable) itemButton.title = "Rezervu lze zvolit až po výběru jedné základní varianty parkování.";
-      if (item.userAdded || item.id === "VYB_05B") {
-        const userMark = createElement("span", "user-inserted-mark", "Vloženo uživatelem");
-        userMark.title = "Položka byla vložena uživatelem; nemá zákonný podklad.";
-        itemButton.append(userMark);
-      }
       const row = createElement("div",
-        `category-equipment-row${capacitySatisfied ? " is-capacity-satisfied" : ""}${standardInactive || reserveUnavailable ? " is-standard-inactive" : ""}`);
+        `category-equipment-row${capacitySatisfied ? " is-capacity-satisfied" : ""}${visuallyInactive || reserveUnavailable ? " is-standard-inactive" : ""}`);
       row.append(selectionLabel, itemButton);
       items.append(row);
     });
@@ -2486,6 +3093,7 @@ function getRealizationPlan() {
     && Number(state.realizationSelections[parkingReserve.key]) === 1;
   const directItems = state.items.filter((item) =>
     !HIDDEN_DUPLICATE_ITEM_IDS.has(item.id)
+    && !REMOVED_SOCIAL_SERVICE_ITEM_IDS.has(item.id)
       &&
     Number(state.realizationSelections[item.key]) === 1
       && state.capacityEdits[item.key]?.satisfiesNearbyCapacity !== true
@@ -2496,10 +3104,14 @@ function getRealizationPlan() {
       && !(parkingReserveSelected && isResidentParkingBaseItem(item))
       && (!isResidentParkingBaseItem(item)
         || item.key === getSelectedResidentParkingBaseItem()?.key)
-      && (item.id !== RESIDENT_PARKING_RESERVE_ID || getSelectedResidentParkingBaseItem())
-      && !isMmrRequirementInactive(item));
+      && (item.id !== RESIDENT_PARKING_RESERVE_ID || getSelectedResidentParkingBaseItem()));
   const directKeys = new Set(directItems.map((item) => item.key));
-  if (Number(state.realizationSelections[SPECIAL_BUILDING_PARKING_REALIZATION_KEY]) === 1) {
+  for (const key of BRNO_REQUIREMENT_KEYS) {
+    if (Number(state.realizationSelections[key]) === 1
+      && state.capacityEdits[key]?.satisfiesNearbyCapacity !== true) directKeys.add(key);
+  }
+  if (Number(state.realizationSelections[SPECIAL_BUILDING_PARKING_REALIZATION_KEY]) === 1
+    && state.capacityEdits[SPECIAL_BUILDING_PARKING_REALIZATION_KEY]?.satisfiesNearbyCapacity !== true) {
     directKeys.add(SPECIAL_BUILDING_PARKING_REALIZATION_KEY);
   }
   return {
@@ -2536,7 +3148,8 @@ function getInfrastructureReserveItem(item) {
 }
 
 function isInfrastructureItem(item) {
-  return INFRASTRUCTURE_ITEM_IDS.has(item.id) || isInfrastructureReserveItem(item);
+  return INFRASTRUCTURE_ITEM_IDS.has(item.id)
+    || isInfrastructureReserveItem(item);
 }
 
 function getSelectedResidentParkingBase() {
@@ -2559,24 +3172,31 @@ function syncRealizationSelectionControls(item) {
   const standardInactive = isMmrRequirementInactive(item);
   const reserveUnavailable = item.id === RESIDENT_PARKING_RESERVE_ID
     && !getSelectedResidentParkingBase();
+  const selectionUnavailable = capacitySatisfied || reserveUnavailable;
   for (const control of document.querySelectorAll(
     `[data-realization-item-key="${CSS.escape(item.key)}"]`
   )) {
     if (control instanceof HTMLInputElement) {
       control.checked = selected;
       control.value = selected ? "1" : "0";
-      control.disabled = standardInactive || capacitySatisfied || reserveUnavailable;
+      control.disabled = selectionUnavailable;
       control.setAttribute("aria-label",
         `${selected ? "Zrušit výběr" : "Vybrat"}: ${displayCatalogItemName(item)}`);
       continue;
     }
-    control.disabled = reserveUnavailable;
+    control.disabled = selectionUnavailable;
     control.classList.toggle("is-selected", selected);
     control.setAttribute("aria-pressed", String(selected));
     control.setAttribute("aria-label",
       `${selected ? "Zrušit výběr" : "Vybrat"} k realizaci: ${displayCatalogItemName(item)}`);
-    control.title = reserveUnavailable
-      ? "Nejprve vyberte zákonnou nebo doporučenou variantu parkování."
+    control.title = standardInactive
+      ? item.socialAvailabilityStandard
+        ? "Doporučený standard se na tento typ území nebo populační práh nevztahuje; položku lze přesto zvolit jako volitelnou realizaci."
+        : getInactiveRecommendationText(item)
+      : capacitySatisfied
+        ? "Kapacita okolí je označena jako dostatečná."
+        : reserveUnavailable
+          ? "Nejprve vyberte zákonnou nebo doporučenou variantu parkování."
       : selected ? "Odebrat z realizace" : "Vybrat k realizaci";
   }
   document.querySelectorAll(".category-equipment-row").forEach((row) => {
@@ -2584,9 +3204,11 @@ function syncRealizationSelectionControls(item) {
     if (button?.dataset.itemKey !== item.key) return;
     button.classList.toggle("is-realization-selected", selected);
     button.classList.toggle("is-capacity-satisfied", capacitySatisfied);
-    button.classList.toggle("is-standard-inactive", standardInactive || reserveUnavailable);
+    button.classList.toggle("is-standard-inactive",
+      !item.socialAvailabilityStandard && standardInactive || reserveUnavailable);
     row.classList.toggle("is-capacity-satisfied", capacitySatisfied);
-    row.classList.toggle("is-standard-inactive", standardInactive || reserveUnavailable);
+    row.classList.toggle("is-standard-inactive",
+      !item.socialAvailabilityStandard && standardInactive || reserveUnavailable);
   });
   document.querySelectorAll(".requirement-card[data-item-key]").forEach((card) => {
     if (card.dataset.itemKey !== item.key) return;
@@ -2655,12 +3277,42 @@ function setSpecialParkingRealizationSelection(selected) {
   updateScenarioStatus();
 }
 
+function setBrnoRequirementSelection(key, selected) {
+  if (!BRNO_REQUIREMENT_KEYS.has(key)) return;
+  state.realizationSelections[key] = selected ? 1 : 0;
+  const disclosureState = captureRequirementDisclosureState();
+  renderRequirements();
+  restoreRequirementDisclosureState(disclosureState);
+  const count = elements.categoryList.querySelector(".realization-summary strong");
+  if (count) count.textContent = `Přímo vybráno: ${getRealizationPlan().directKeys.size}`;
+  saveScenario();
+  updateScenarioStatus();
+}
+
 function setRealizationSelection(item, selected) {
   if (selected && item.id === RESIDENT_PARKING_RESERVE_ID
     && !getSelectedResidentParkingBase()) {
     showNotice("Nejprve vyberte zákonnou nebo doporučenou variantu parkování.", true);
     return;
   }
+  const changedItems = applyRealizationSelectionState(item, selected);
+  changedItems.forEach((changedItem) => syncRealizationSelectionControls(changedItem));
+  syncParkingReserveControls();
+  const count = elements.categoryList.querySelector(".realization-summary strong");
+  if (count) {
+    count.textContent = `Přímo vybráno: ${getRealizationPlan().directKeys.size}`;
+  }
+  if (state.hideUnrealizedItems) updateRequirementVisibility();
+  const disclosureState = captureRequirementDisclosureState();
+  renderRequirements();
+  restoreRequirementDisclosureState(disclosureState);
+  saveScenario();
+  updateScenarioStatus();
+}
+
+function applyRealizationSelectionState(item, selected) {
+  if (selected && item.id === RESIDENT_PARKING_RESERVE_ID
+    && !getSelectedResidentParkingBase()) return [];
   const changedItems = [item];
   const infrastructureSource = getInfrastructureReserveSource(item);
   const infrastructureReserve = INFRASTRUCTURE_ITEM_IDS.has(item.id)
@@ -2695,14 +3347,39 @@ function setRealizationSelection(item, selected) {
       changedItems.push(reserveItem);
     }
   }
-  changedItems.forEach((changedItem) => syncRealizationSelectionControls(changedItem));
+  return changedItems;
+}
+
+function toggleRealizationScope(scope) {
+  const controls = [...scope.querySelectorAll("button[data-realization-item-key]")]
+    .filter((control) => !control.disabled);
+  const uniqueControls = [...new Map(controls.map((control) =>
+    [control.dataset.realizationItemKey, control])).values()];
+  if (!uniqueControls.length) return;
+  const selected = !uniqueControls.every((control) =>
+    control.getAttribute("aria-pressed") === "true");
+  const disclosureState = captureRequirementDisclosureState();
+  const changedItems = new Map();
+  for (const control of uniqueControls) {
+    const key = control.dataset.realizationItemKey;
+    if (key === SPECIAL_BUILDING_PARKING_REALIZATION_KEY) {
+      state.realizationSelections[key] = selected ? 1 : 0;
+      continue;
+    }
+    if (BRNO_REQUIREMENT_KEYS.has(key)) {
+      state.realizationSelections[key] = selected ? 1 : 0;
+      continue;
+    }
+    const item = state.items.find((candidate) => candidate.key === key);
+    if (!item) continue;
+    for (const changedItem of applyRealizationSelectionState(item, selected)) {
+      changedItems.set(changedItem.key, changedItem);
+    }
+  }
+  changedItems.forEach((item) => syncRealizationSelectionControls(item));
   syncParkingReserveControls();
   const count = elements.categoryList.querySelector(".realization-summary strong");
-  if (count) {
-    count.textContent = `Přímo vybráno: ${getRealizationPlan().directKeys.size}`;
-  }
-  if (state.hideUnrealizedItems) updateRequirementVisibility();
-  const disclosureState = captureRequirementDisclosureState();
+  if (count) count.textContent = `Přímo vybráno: ${getRealizationPlan().directKeys.size}`;
   renderRequirements();
   restoreRequirementDisclosureState(disclosureState);
   saveScenario();
@@ -2710,9 +3387,8 @@ function setRealizationSelection(item, selected) {
 }
 
 function hasActiveUserOverride(override) {
-  return Number.isFinite(override?.quantity)
-    && Boolean(override.author?.trim())
-    && Boolean(override.note?.trim());
+  const quantity = numericOrNull(override?.quantity);
+  return quantity !== null && quantity >= 0;
 }
 
 function recordUserOverrideChange(item, kind) {
@@ -2728,8 +3404,8 @@ function recordUserOverrideChange(item, kind) {
   const entry = {
     previousQuantity: previous,
     quantity: override.quantity,
-    author: override.author.trim(),
-    reason: override.note.trim(),
+    author: override.author?.trim() || "Neuvedeno",
+    reason: override.note?.trim() || "Neuveden",
     changedAt: new Date().toISOString()
   };
   history.push(entry);
@@ -2742,11 +3418,15 @@ function getUserOverrideAuditSummary(override, unit) {
   const latest = history[history.length - 1];
   if (!latest) {
     return hasActiveUserOverride(override)
-      ? "Přepis zatím nemá auditní záznam. Změňte pole a potvrďte ho klávesou Tab nebo Enter."
-      : "Zákonný či metodický výpočet zůstává výchozí hodnotou. Přepis vyžaduje návrhové množství, autora a důvod.";
+      ? "Uživatelský návrh je aktivní; autor a poznámka jsou nepovinné."
+      : "Zákonný či metodický výpočet zůstává výchozí hodnotou. Zadejte pouze uživatelské návrhové množství.";
   }
   const timestamp = new Date(latest.changedAt).toLocaleString("cs-CZ");
-  return `Výchozí model: ${formatNumber(override.baselineQuantity)} ${text(unit, "jednotek")}. Poslední změna ${timestamp}: ${latest.author}; ${formatNumber(latest.previousQuantity)} → ${formatNumber(latest.quantity)} ${text(unit, "jednotek")}. Důvod: ${latest.reason}`;
+  const auditContext = [
+    latest.author && latest.author !== "Neuvedeno" ? latest.author : "",
+    latest.reason && latest.reason !== "Neuveden" ? latest.reason : ""
+  ].filter(Boolean).join("; ");
+  return `Výchozí model: ${formatNumber(override.baselineQuantity)} ${text(unit, "jednotek")}. Poslední změna ${timestamp}${auditContext ? ` (${auditContext})` : ""}: ${formatNumber(latest.previousQuantity)} → ${formatNumber(latest.quantity)} ${text(unit, "jednotek")}.`;
 }
 
 function getPlannedQuantity(item, kind = "", applyUserOverride = true) {
@@ -2788,6 +3468,45 @@ function getSpatialPointRequirement(item, kind = "recommended") {
   if (kind !== "recommended" || !hasSpatialPointFloor(item)) return null;
   const count = calculateSpatialEstimate(item)?.count;
   return Number.isFinite(count) ? Math.max(item.modelProposed ?? 0, count) : null;
+}
+
+function getNetworkFacilityCount(item, kind) {
+  if (kind !== "recommended") return null;
+  if (MMR_SCHOOL_RECOMMENDED_ITEM_IDS.has(item.id)) {
+    const recommendation = getMmrSchoolRecommendation(item);
+    return recommendation?.spatialCapacityFloor > 0
+      && recommendation.spatialPointCount > 1
+      ? recommendation.spatialPointCount : null;
+  }
+  if (!hasSpatialPointFloor(item) || isMmrWasteYard(item)) return null;
+  const count = calculateSpatialEstimate(item)?.count;
+  return Number.isFinite(count) && count > 1 ? count : null;
+}
+
+function formatRequirementSummaryQuantity(item, kind, quantity) {
+  const quantityText = String(quantity ?? "")
+    .replace(/\s+\([^()]*\szařízení\)$/, "");
+  const count = getNetworkFacilityCount(item, kind);
+  return count === null || !(getExportNumericValue(quantityText) > 0)
+    ? quantityText
+    : `${quantityText} (${formatNumber(count)} zařízení)`;
+}
+
+function getRequirementSummaryUnit(item) {
+  return item.id === "VYB_16" ? "lékárna" : getRequirementUnit(item);
+}
+
+function formatRequirementSummaryAmount(item, quantity) {
+  const unitForms = {
+    VYB_03A: ["hřiště", "hřiště", "hřišť"],
+    VYB_03B: ["hřiště", "hřiště", "hřišť"],
+    VYB_03C: ["sportoviště", "sportoviště", "sportovišť"],
+    VYB_16: ["lékárna", "lékárny", "lékáren"]
+  }[item.id];
+  const unit = unitForms
+    ? czechCountUnit(quantity, ...unitForms)
+    : getRequirementSummaryUnit(item);
+  return `${formatNumber(quantity, 2)} ${text(unit, "")}`;
 }
 
 function getSpatialCapacityPerPoint(item) {
@@ -2883,18 +3602,54 @@ function getResidentParkingTerritoryType() {
   return String(getPrimary("TYP_UZEMI") ?? "").match(/[A-D]/i)?.[0]?.toUpperCase() ?? "A";
 }
 
+function isMmrSchoolPresenceRecommended(item, localPopulation) {
+  const territory = getResidentParkingTerritoryType();
+  if (item.id === "VYB_02C_1") {
+    if (!Number.isFinite(localPopulation)) return null;
+    return ["A", "B"].includes(territory) && localPopulation > 20000;
+  }
+  if (item.id === "VYB_02C_2") {
+    if (territory === "A") return true;
+    if (!Number.isFinite(localPopulation)) return null;
+    return ["B", "C"].includes(territory) && localPopulation > 5000;
+  }
+  return null;
+}
+
 function isMmrRequirementInactive(item) {
   const territory = getResidentParkingTerritoryType();
   const localPopulation = numericOrNull(derivedValues().O_uzemi_cil);
+  if (item.id === "VYB_17A") return territory === "D";
+  const schoolPresenceRecommended = isMmrSchoolPresenceRecommended(item, localPopulation);
+  if (schoolPresenceRecommended !== null) return !schoolPresenceRecommended;
+  if (item.socialAvailabilityStandard) {
+    const standard = item.socialAvailabilityStandard;
+    if (!standard.territories.includes(territory)) return true;
+    if (standard.minimumPopulation !== undefined) {
+      const municipalityPopulation = numericOrNull(derivedValues().O_prah);
+      return municipalityPopulation !== null
+        && municipalityPopulation <= standard.minimumPopulation;
+    }
+    return false;
+  }
   if (SCHOOL_CAPACITY_ITEM_IDS.has(item.id)) {
     return localPopulation !== null && getMmrSchoolAccessRule(item).mode === "manual";
   }
-  if (item.id === "VYB_02C_1") return !["A", "B"].includes(territory);
-  if (item.id === "VYB_02C_2") {
-    return territory === "D"
-      || ["B", "C"].includes(territory) && !(localPopulation > 5000);
+  if (MMR_HEALTHCARE_GROUP_1_ITEM_IDS.has(item.id)) {
+    return ["A", "B", "C"].includes(territory)
+      && localPopulation !== null && localPopulation <= 2000;
+  }
+  if (["VYB_09B_1", "VYB_09B_2"].includes(item.id)) {
+    return !["A", "B"].includes(territory)
+      || territory === "B" && localPopulation !== null && localPopulation <= 5000;
   }
   return item.id === "VYB_05B";
+}
+
+function getInactiveRecommendationText(item) {
+  return item.id === "VYB_17A"
+    ? "V typu D se doporučení interních metodik policie neměří; modelovanou potřebu lze přesto zvolit jako vlastní realizaci."
+    : "Položka je mimo práh doporučení MMR; modelovanou potřebu lze přesto zvolit jako vlastní realizaci.";
 }
 
 function getResidentParkingRecommendedEstimate(item) {
@@ -2998,7 +3753,7 @@ function formatStandardComparisonAmount(item, value) {
 }
 
 function hasAppliedStandardTarget(item) {
-  return getPrimary("REZIM_STD") === "STANDARD"
+  return isCompleteStandardMode()
     && hasStandardComparison(item)
     && !SCHOOL_CAPACITY_ITEM_IDS.has(item.id)
     && getRecommendedIncrease(item) !== null
@@ -3035,10 +3790,10 @@ function getStandardMetricScale(item, kind, calc = adjustedResult(item)) {
   if (comparison.uplift === null) return 1;
   if (comparison.base === null || comparison.base <= 0) return 1;
   if (calc.hasOverride) return 1;
-  if (kind === "recommended" && getPrimary("REZIM_STD") !== "STANDARD") {
+  if (kind === "recommended" && !isCompleteStandardMode()) {
     return comparison.delta / comparison.base;
   }
-  if (getPrimary("REZIM_STD") === "STANDARD" && hasAppliedStandardTarget(item)) {
+  if (isCompleteStandardMode() && hasAppliedStandardTarget(item)) {
     const remaining = calc.usesDemandBasedCapacity ? calc.remainingCapacity : calc.remaining;
     return remaining === null ? getAppliedStandardTarget(item) / comparison.base
       : remaining / comparison.base;
@@ -3059,8 +3814,8 @@ function sameMetricValue(left, right) {
   return Math.abs(leftNumber - rightNumber) <= Math.max(1, Math.abs(leftNumber), Math.abs(rightNumber)) * 1e-9;
 }
 
-function getRealizedFacilityMetrics(item) {
-  const estimate = getProjectPlanningEstimate(item, "recommended");
+function getRealizedFacilityMetrics(item, kind = "recommended") {
+  const estimate = getProjectPlanningEstimate(item, kind);
   const facilityPlan = estimate?.facilityPlan;
   if (REALIZATION_OUTDOOR_IDS.has(item.id)) {
     const siteArea = numericOrNull(estimate?.siteArea)
@@ -3243,6 +3998,13 @@ function getAggregateProjectEnergyMetrics(item, includeRealizedFacilities = true
 }
 
 function getItemEstimateDefaultQuantity(item) {
+  if (item.socialDemographic) {
+    const population = numericOrNull(derivedValues().O_prah);
+    const coefficient = numericOrNull(getItemEstimateValue(item,
+      "SOCIAL_DEMOGRAPHIC_COEFFICIENT"));
+    if (population === null || coefficient === null) return 0;
+    return Math.ceil(population * coefficient);
+  }
   if (item.id === "VYB_05B") {
     return getItemEstimateValue(item, HALL_COVERAGE_INPUT.code) === "Samostatná nová hala požadována"
       ? 1 : 0;
@@ -3266,6 +4028,7 @@ function getItemEstimateDefaultQuantity(item) {
 }
 
 function getItemEstimateQuantity(item) {
+  if (item.socialDemographic) return getItemEstimateDefaultQuantity(item);
   const saved = numericOrNull(state.itemEstimateValues[item.key]?.ITEM_QUANTITY);
   return saved !== null && saved >= 0 ? saved : getItemEstimateDefaultQuantity(item);
 }
@@ -3285,7 +4048,15 @@ function estimateComparableUnitRate(item) {
     : (rates[middle - 1] + rates[middle]) / 2;
 }
 
+function normalizeCostSurcharge(value) {
+  const surcharge = numericOrNull(value);
+  return surcharge === 0.23 ? 0.08 : surcharge;
+}
+
 function getItemEstimateDefault(item, code) {
+  if (code === "SOCIAL_DEMOGRAPHIC_COEFFICIENT") {
+    return item.socialDemographic?.coefficient ?? 0;
+  }
   const quantity = getItemEstimateDefaultQuantity(item);
   const scenario = ITEM_ESTIMATE_SCENARIOS[item.id];
   const perUnit = (value) => {
@@ -3302,6 +4073,7 @@ function getItemEstimateDefault(item, code) {
     case "PARK_GREEN_AREA_HA": return 0.5;
     case "PARK_LANDSCAPING_RATE_M2": return 500;
     case "ITEM_USABLE_AREA_PER_UNIT":
+      if (item.socialDemographic) return item.socialDemographic.usableAreaPerUnit;
       if (item.id === "VYB_04B") return 5000;
       if (item.id === "VYB_15B_2") return 1.5;
       if (scenario) return scenario.usableArea;
@@ -3321,6 +4093,7 @@ function getItemEstimateDefault(item, code) {
         : null;
     }
     case "ITEM_SITE_AREA_PER_UNIT":
+      if (item.socialDemographic) return item.socialDemographic.siteAreaPerUnit;
       if (item.id === "VYB_04B") return 5000;
       if (item.id === "VYB_15B_2") return 1.2;
       if (scenario) return scenario.siteArea;
@@ -3333,6 +4106,11 @@ function getItemEstimateDefault(item, code) {
     case "ITEM_RTS_RATE": {
       const constructionRate = getRtsConstructionRate(item);
       if (constructionRate !== undefined) return constructionRate;
+      if (item.socialDemographic) {
+        return numericOrNull(item.rtsPricing?.rate)
+          ?? numericOrNull(item.unitPrice)
+          ?? estimateComparableUnitRate(item);
+      }
       if (item.id === "VYB_04B") return 2500000;
       if (item.id === "VYB_15B_2") return 10100;
       if (item.id === "VYB_10B_1") return 13645;
@@ -3341,7 +4119,7 @@ function getItemEstimateDefault(item, code) {
       if (scenario) return 13645;
       const sourceQuantity = getItemEstimateDefaultQuantity(item);
       if (numericOrNull(item.cost) > 0 && sourceQuantity > 0) {
-        return numericOrNull(item.cost) / sourceQuantity / 1.23;
+        return numericOrNull(item.cost) / sourceQuantity / 1.08;
       }
       return estimateComparableUnitRate(item);
     }
@@ -3353,12 +4131,12 @@ function getItemEstimateDefault(item, code) {
       return item.rtsPricing?.rateBasis || "unit";
     case "ITEM_RTS_FIXED_COST": return numericOrNull(item.rtsPricing?.fixedCost) ?? 0;
     case "ITEM_COST_SURCHARGE": {
-      if (item.id === "VYB_10B_1") return 0.23;
-      const sourceSurcharge = numericOrNull(item.rtsPricing?.surcharge);
+      if (item.id === "VYB_10B_1") return 0.08;
+      const sourceSurcharge = normalizeCostSurcharge(item.rtsPricing?.surcharge);
       if (sourceSurcharge !== null) return sourceSurcharge;
       const legacyFactor = numericOrNull(getSecondary("K_CENA_SKOLY"));
       return SCHOOL_CAPACITY_ITEM_IDS.has(item.id) && legacyFactor !== null
-        ? Math.max(0, legacyFactor - 1) : 0.23;
+        ? normalizeCostSurcharge(Math.max(0, legacyFactor - 1)) : 0.08;
     }
     default: return null;
   }
@@ -3395,7 +4173,7 @@ function getAlternativeEstimateDefault(code) {
     case "ALT_POWER_CABLE_RATE": return 2569.6;
     case "ALT_TRANSFORMER_CAPACITY_KW": return 2500;
     case "ALT_TRANSFORMER_RATE": return 3000000;
-    case "ALT_COST_SURCHARGE": return 0.23;
+    case "ALT_COST_SURCHARGE": return 0.08;
     default: return null;
   }
 }
@@ -3473,13 +4251,13 @@ function getParkingEstimateValue(item, kind, code) {
     case "PARKING_SURFACE_RATE_M3": return 7500;
     case "PARKING_SURFACE_AREA_PER_STALL_M2": return item.id === "VYB_15A_1"
       ? numericOrNull(getPrimary("PARK_PAVE_M2")) ?? 25 : 25;
-    case "ITEM_COST_SURCHARGE": return 0.23;
+    case "ITEM_COST_SURCHARGE": return 0.08;
     default: return null;
   }
 }
 
 function getTargetedPlanCostRate(item) {
-  if (["VYB_09D", "VYB_16A", "VYB_17A"].includes(item.id)) {
+  if (["VYB_09D", "VYB_16A", VOLUNTEER_FIRE_STATION_ID, "VYB_17A"].includes(item.id)) {
     return numericOrNull(getTargetedPlanInput(item, "MODEL_COST_PER_M3"));
   }
   return getRtsBuildingGroup(item)
@@ -3521,7 +4299,7 @@ function getTargetedPlanInput(item, code) {
   if (saved === "" || saved === null) return null;
   if (saved === undefined) {
     if (code === "MODEL_COST_PER_M3"
-      && ["VYB_09D", "VYB_16A", "VYB_17A"].includes(item.id)) {
+      && ["VYB_09D", "VYB_16A", VOLUNTEER_FIRE_STATION_ID, "VYB_17A"].includes(item.id)) {
       return numericOrNull(getRtsConstructionRate(item))
         ?? numericOrNull((TARGETED_PLAN_INPUTS[item.id] || [])
           .find((candidate) => candidate.code === code)?.defaultValue);
@@ -3695,9 +4473,11 @@ function getMmrSchoolRecommendation(item) {
 function getMmrSchoolSummaryText(item) {
   const recommendation = getMmrSchoolRecommendation(item);
   if (!recommendation || recommendation.totalDemand === null) return "chybí populační vstup";
-  if (!recommendation.standardApplicable) return "standard MMR se neuplatní";
+  if (!recommendation.standardApplicable) {
+    return `${formatNumber(recommendation.totalDemand)} ${text(getCapacityResultUnit(item), "míst")} modelová potřeba · mimo práh MMR`;
+  }
   const quantity = recommendation.requiredCapacity;
-  return `${formatNumber(quantity)} ${text(getCapacityResultUnit(item), "míst")} k zajištění`;
+  return `${formatNumber(quantity)} ${text(getCapacityResultUnit(item), "míst")}`;
 }
 
 function getTargetedCoverageEstimate(distanceMeters) {
@@ -3759,7 +4539,7 @@ function getTargetedFacilityPlan(item, quantity) {
     unitLabel = "výjezdových základen";
     capacity = vehicles;
     detail = `${formatNumber(vehicles)} výjezdových vozů; ${formatNumber(vehiclesPerBase)} vozů/základnu`;
-  } else if (item.id === "VYB_16A") {
+  } else if (["VYB_16A", VOLUNTEER_FIRE_STATION_ID].includes(item.id)) {
     const vehicles = capacity;
     const vehiclesPerBase = input("MODEL_VEHICLES_PER_BASE");
     if (![vehiclesPerBase, input("MODEL_BASE_AREA"), sitePerUnit,
@@ -3770,7 +4550,8 @@ function getTargetedFacilityPlan(item, quantity) {
     totalFloorArea = usableArea;
     siteArea = stations * sitePerUnit;
     pavedArea = stations * input("MODEL_PAVED_PER_BASE") + vehicles * input("MODEL_PAVED_PER_UNIT");
-    unitLabel = "hasičských stanic";
+    unitLabel = item.id === VOLUNTEER_FIRE_STATION_ID
+      ? "hasičských zbrojnic JSDH" : "hasičských stanic";
     capacity = vehicles;
     detail = `${formatNumber(vehicles)} požárních vozidel; ${formatNumber(vehiclesPerBase)} vozidel/stanici`;
   } else if (item.id === "VYB_17A") {
@@ -3811,7 +4592,7 @@ function getTargetedFacilityPlan(item, quantity) {
   const volumeFactorUnit = item.id === "VYB_17B" ? "m" : "m³/m²";
   const baseCost = volume * rate;
   const cost = Math.round(baseCost * (1 + surcharge));
-  const count = ["VYB_09D", "VYB_16A", "VYB_17A"].includes(item.id)
+  const count = ["VYB_09D", "VYB_16A", VOLUNTEER_FIRE_STATION_ID, "VYB_17A"].includes(item.id)
     ? units : Math.ceil(capacity / input(item.id === "VYB_01_J"
       ? "MODEL_GROUP_CAPACITY" : "MODEL_CAPACITY_PER_FACILITY"));
   const countForms = {
@@ -3826,6 +4607,7 @@ function getTargetedFacilityPlan(item, quantity) {
     VYB_09B_2: ["ambulance", "ambulance", "ambulancí"],
     VYB_09D: ["základna", "základny", "základen"],
     VYB_16A: ["stanice", "stanice", "stanic"],
+    [VOLUNTEER_FIRE_STATION_ID]: ["zbrojnice JSDH", "zbrojnice JSDH", "zbrojnic JSDH"],
     VYB_17A: ["služebna", "služebny", "služeben"],
     VYB_17B: ["úkryt", "úkryty", "úkrytů"]
   }[item.id];
@@ -3840,6 +4622,7 @@ function getTargetedFacilityPlan(item, quantity) {
     VYB_09B_2: ["ambulance", "ambulance", "ambulancí"],
     VYB_09D: ["výjezdový vůz", "výjezdové vozy", "výjezdových vozů"],
     VYB_16A: ["požární vozidlo", "požární vozidla", "požárních vozidel"],
+    [VOLUNTEER_FIRE_STATION_ID]: ["požární vozidlo", "požární vozidla", "požárních vozidel"],
     VYB_17A: ["policista", "policisté", "policistů"],
     VYB_17B: ["osoba", "osoby", "osob"]
   }[item.id];
@@ -3860,6 +4643,7 @@ function getTargetedFacilityPlan(item, quantity) {
     VYB_09B_2: "Modelový počet odborných ambulancí",
     VYB_09D: "Modelový počet výjezdových základen",
     VYB_16A: "Modelový počet hasičských stanic",
+    [VOLUNTEER_FIRE_STATION_ID]: "Modelový počet hasičských zbrojnic JSDH",
     VYB_17A: "Modelový počet policejních služeben",
     VYB_17B: "Modelový počet úkrytových modulů"
   }[item.id];
@@ -3917,7 +4701,9 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
       ? calculateSpatialEstimate(item) : null;
     const capacityPerFacility = getTargetedPlanInput(item, "MODEL_CAPACITY_PER_FACILITY");
     const spatialCapacityFloor = Number.isFinite(coverage?.count)
-      && capacityPerFacility > 0 ? coverage.count * capacityPerFacility : null;
+      && capacityPerFacility > 0 && facilityNeed !== null
+      && facilityNeed !== undefined && facilityNeed > 0
+      ? coverage.count * capacityPerFacility : null;
     const plannedFacilityNeed = facilityNeed === null || facilityNeed === undefined
       ? facilityNeed : Math.max(facilityNeed, spatialCapacityFloor ?? 0);
     if (spatialCapacityFloor !== null) {
@@ -3955,7 +4741,8 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
       ? equations.filter((equation) => !modelEquations.includes(equation)) : [];
     return {
       type: "targeted", metrics, equations: calculationEquations,
-      verificationEquations, sources, facilityPlan
+      verificationEquations, sources, facilityPlan,
+      spatialPointCount: spatialCapacityFloor !== null ? coverage.count : null
     };
   };
 
@@ -3977,6 +4764,25 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
     const capacityEdit = getCapacityEdit(item);
     const availableFte = numericOrNull(capacityEdit.quantity);
     const nearbyCapacityConfirmed = capacityEdit.satisfiesNearbyCapacity === true;
+    const checksIndividualAccess = ["VYB_17", "VYB_18", "VYB_19"].includes(item.id);
+    const physicalAccess = ["A", "B", "C"].includes(territory);
+    const municipalityThresholdMet = context.projectPopulation !== null
+      && context.projectPopulation > 2000;
+    const walkDistance = checksIndividualAccess
+      ? getTargetedPlanInput(item, "HEALTHCARE_WALK_DISTANCE") : null;
+    const driveMinutes = checksIndividualAccess
+      ? getTargetedPlanInput(item, "HEALTHCARE_DRIVE_MINUTES") : null;
+    const accessRequired = includeSpatialFloor && checksIndividualAccess
+      && (physicalAccess ? municipalityThresholdMet : territory === "D");
+    const accessVerified = accessRequired
+      && (physicalAccess ? walkDistance !== null : driveMinutes !== null);
+    const accessPasses = !accessRequired || accessVerified
+      && (physicalAccess ? walkDistance <= 600 : driveMinutes <= 35);
+    const accessStatus = !accessRequired ? "Standard se na tuto kombinaci nevztahuje"
+      : !accessVerified ? "Neověřeno" : accessPasses ? "Vyhovuje" : "Nevyhovuje";
+    const capacityAccessible = !includeSpatialFloor || !accessRequired
+      || accessVerified && accessPasses;
+    const nearbyCapacityApplied = nearbyCapacityConfirmed && capacityAccessible;
     const minimumPopulation = includeSpatialFloor
       ? getTargetedPlanInput(item, "MODEL_MINIMUM_POPULATION_PER_FTE") : null;
     const minimumDensity = includeSpatialFloor
@@ -3986,8 +4792,9 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
     const twoDayDensityMet = minimumDensity !== null && context.populationDensity !== null
       && context.populationDensity >= minimumDensity;
     const remainingFte = requiredFte === null ? null
-      : nearbyCapacityConfirmed ? 0 : Math.max(0, requiredFte - (availableFte ?? 0));
-    const capacityVerified = availableFte !== null || nearbyCapacityConfirmed;
+      : !capacityAccessible ? requiredFte
+        : nearbyCapacityApplied ? 0 : Math.max(0, requiredFte - (availableFte ?? 0));
+    const capacityVerified = capacityAccessible && (availableFte !== null || nearbyCapacityConfirmed);
     const clinics = remainingFte === null || remainingFte === 0 || !capacityPerFacility
       ? remainingFte === 0 ? 0 : null
       : Math.ceil(remainingFte / capacityPerFacility);
@@ -4023,6 +4830,11 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
       { label: "Požadovaná modelová potřeba", value: requiredFte, unit: isSpecialistGroup ? "ambulancí" : "lékařských úvazků" },
       { label: "Ověřená volná kapacita v okolí", value: availableFte, unit: isSpecialistGroup ? "ambulancí" : "lékařských úvazků" },
       { label: "Kapacita okolí potvrzena uživatelem", value: nearbyCapacityConfirmed ? "Ano" : "Ne", unit: "" },
+      ...(includeSpatialFloor && checksIndividualAccess ? [
+        { label: "Kontrola dostupnosti MMR", value: accessStatus, unit: "" },
+        { label: "Ověřená pěší vzdálenost", value: physicalAccess ? walkDistance : null, unit: "m" },
+        { label: "Ověřený dojezd (typ D)", value: physicalAccess ? null : driveMinutes, unit: "min" }
+      ] : []),
       { label: "Poptávka nepokrytá ověřenou kapacitou", value: remainingFte, unit: isSpecialistGroup ? "ambulancí" : "lékařských úvazků" },
       { label: `Modelový počet ${unitLabel}`, value: clinics, unit: unitLabel }
     ];
@@ -4038,9 +4850,11 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
       ...(minimumPopulation === null ? [] : [
         `Kontrola MMR pro ordinaci dva dny týdně: ${formatNumber(context.projectPopulation)} obyvatel ${twoDayPopulationMet ? "splňuje" : "nesplňuje"} minimum ${formatNumber(minimumPopulation)}; hustota ${formatNumber(context.populationDensity)} obyv./ha ${twoDayDensityMet ? "splňuje" : "nesplňuje"} minimum ${formatNumber(minimumDensity)} obyv./ha. Jde o samostatný práh, nikoli náhradu výpočtu potřeby z přírůstku.`
       ]),
-      nearbyCapacityConfirmed
+      nearbyCapacityApplied
         ? "Uživatel potvrdil, že okolní kapacita splňuje potřebu; nová ordinace se proto nenavrhuje."
-        : `Po odečtu ověřené volné kapacity = max(0, ${formatNumber(requiredFte)} − ${capacityVerified ? formatNumber(availableFte) : "0 (neověřeno)"}) = ${formatNumber(remainingFte)} ${isSpecialistGroup ? "ambulancí" : "lékařských úvazků"}; modelový počet zařízení = ceil(${formatNumber(remainingFte)} ÷ ${formatNumber(capacityPerFacility)}) = ${formatNumber(clinics)} ${unitLabel}.`
+        : !capacityAccessible
+          ? `Kapacita se neodečítá, protože dostupnost MMR je ${accessStatus.toLowerCase()}; ověřte konkrétní pěší trasu do 600 m nebo dojezd typu D do 35 min.`
+          : `Po odečtu ověřené volné kapacity = max(0, ${formatNumber(requiredFte)} − ${capacityVerified ? formatNumber(availableFte) : "0 (neověřeno)"}) = ${formatNumber(remainingFte)} ${isSpecialistGroup ? "ambulancí" : "lékařských úvazků"}; modelový počet zařízení = ceil(${formatNumber(remainingFte)} ÷ ${formatNumber(capacityPerFacility)}) = ${formatNumber(clinics)} ${unitLabel}.`
     ];
     const source = item.id === "VYB_09B_1" || item.id === "VYB_09B_2"
       ? includeSpatialFloor
@@ -4075,10 +4889,10 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
       ? null : Math.ceil(children * attendanceShare);
     const existingCapacity = getTargetedPlanInput(item, "EARLY_CHILDCARE_EXISTING_CAPACITY");
     const existingDistance = getTargetedPlanInput(item, "EARLY_CHILDCARE_ACCESS_DISTANCE");
-    const source = getTargetedPlanSource(item, "EARLY_CHILDCARE_DATA_SOURCE");
-    const coverageDistance = territory === "D" ? 600 : 400;
+      const source = getTargetedPlanSource(item, "EARLY_CHILDCARE_DATA_SOURCE");
+      const coverageDistance = territory === "D" ? 600 : 400;
     const verifiedCapacity = existingCapacity !== null && Number.isInteger(existingCapacity)
-      && existingDistance !== null && existingDistance <= coverageDistance && source.length > 0;
+      && existingDistance !== null && existingDistance <= coverageDistance;
     const unmet = expectedAttendance === null ? null
       : verifiedCapacity ? Math.max(0, expectedAttendance - existingCapacity) : expectedAttendance;
     const groups = unmet === null || unmet === 0 ? 0
@@ -4137,13 +4951,11 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
       ? ["A", "B"].includes(territory) && localPopulation !== null && localPopulation > 20000
       : localPopulation !== null && (territory === "A"
         || ["B", "C"].includes(territory) && localPopulation > 5000);
-    const localPresenceRecommended = secondarySchool
-      ? populationThresholdReached : isApplicable;
+    const localPresenceRecommended = isMmrSchoolPresenceRecommended(item, localPopulation) ?? false;
     const capacity = getCapacityEdit(item);
     const capacityVerified = capacity.satisfiesNearbyCapacity === true;
-    const studentDemand = !isApplicable ? 0
-      : projectIncrement !== null && studentShare !== null
-        ? Math.ceil(projectIncrement * studentShare) : null;
+    const studentDemand = projectIncrement !== null && studentShare !== null
+      ? Math.ceil(projectIncrement * studentShare) : null;
     const unmetSeats = studentDemand === null ? null
       : capacityVerified ? 0 : studentDemand;
     const newSchools = unmetSeats === null || !Number.isFinite(seatsPerSchool) || seatsPerSchool <= 0
@@ -4218,14 +5030,16 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
     const standardApplicable = !includeSpatialFloor || !physicalAccess || municipalityThresholdMet;
     const coverage = includeSpatialFloor && municipalityThresholdMet
       ? getTargetedCoverageEstimate(600) : null;
-    const accessVerified = includeSpatialFloor && Boolean(accessSource) && (
+    const accessVerified = includeSpatialFloor && (
       physicalAccess ? walkDistance !== null : driveMinutes !== null);
     const accessPasses = !includeSpatialFloor || accessVerified && standardApplicable && (
       physicalAccess ? walkDistance <= 600 : driveMinutes <= 35);
     const nearbyCapacityConfirmed = capacityEdit.satisfiesNearbyCapacity === true;
-    const capacityVerified = nearbyCapacityConfirmed || availableFte !== null
-      && (includeSpatialFloor ? Boolean(source) && accessVerified && accessPasses : true);
-    const remainingFte = fte === null ? null : !standardApplicable || nearbyCapacityConfirmed
+    const nearbyCapacityApplied = nearbyCapacityConfirmed
+      && (!includeSpatialFloor || !standardApplicable || accessVerified && accessPasses);
+    const capacityVerified = nearbyCapacityApplied || availableFte !== null
+      && (includeSpatialFloor ? accessVerified && accessPasses : true);
+    const remainingFte = fte === null ? null : !standardApplicable || nearbyCapacityApplied
       ? 0 : capacityVerified ? Math.max(0, fte - availableFte) : fte;
     return estimate([
       { label: "Přírůstek obyvatel řešeného území (záměr)", value: population, unit: "obyvatel" },
@@ -4255,6 +5069,10 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
       { label: "Indikativní počet lékařských úvazků", value: fte, unit: "lékařských úvazků" },
       { label: "Ověřená volná kapacita", value: availableFte, unit: "lékařských úvazků" },
       { label: "Kapacita okolí potvrzena uživatelem", value: nearbyCapacityConfirmed ? "Ano" : "Ne", unit: "" },
+      ...(includeSpatialFloor ? [{
+        label: "Potvrzení kapacity započteno po ověření dostupnosti",
+        value: nearbyCapacityApplied ? "Ano" : "Ne", unit: ""
+      }] : []),
       { label: "Poptávka po gynekologii po odečtu ověřené kapacity", value: remainingFte, unit: "lékařských úvazků" },
       { label: "Modelový počet ordinací", value: remainingFte === null
         ? null : Math.ceil(remainingFte / getTargetedPlanInput(item, "MODEL_CAPACITY_PER_FACILITY")), unit: "ordinací" },
@@ -4281,8 +5099,10 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
         : "Pro typ D se místo strukturálního populačního prahu uplatňuje dojezdový standard.",
       !standardApplicable
         ? "Pro typ A/B/C bez překročení 2 000 obyvatel se doporučení na sídelní přítomnost neuplatní; modelová nová potřeba ordinace je proto 0."
-        : nearbyCapacityConfirmed
+        : nearbyCapacityApplied
           ? "Uživatel potvrdil, že kapacita v okolí splňuje potřebu; nová ordinace se proto nenavrhuje."
+          : nearbyCapacityConfirmed && includeSpatialFloor && standardApplicable
+            ? "Potvrzení kapacity se nezapočítá, dokud není ověřena vyhovující pěší vzdálenost do 600 m nebo dojezd do 35 minut."
           : capacityVerified && remainingFte !== null
         ? `Poptávka po odečtu ověřené volné kapacity dostupné ordinace = max(0, ${formatNumber(fte)} − ${formatNumber(availableFte)}) = ${formatNumber(remainingFte)} lékařských úvazků.`
         : `Poptávka k vyhledání v okolí = ${formatNumber(fte)} lékařských úvazků; bez ověřené kapacity dostupné ordinace se nic neodečítá.`,
@@ -4317,7 +5137,7 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
     const source = getTargetedPlanSource(item, "ZZS_COVERAGE_SOURCE");
     const populationPerVehicle = getTargetedPlanInput(item, "MODEL_POPULATION_PER_VEHICLE");
     const vehiclesPerBase = getTargetedPlanInput(item, "MODEL_VEHICLES_PER_BASE");
-    const validResponse = Boolean(source) && responseMinutes !== null && catchmentPopulation !== null;
+    const validResponse = responseMinutes !== null && catchmentPopulation !== null;
     const coveredIsValid = covered !== null && catchmentPopulation !== null && covered <= catchmentPopulation;
     const uncovered = coveredIsValid ? Math.max(0, catchmentPopulation - covered) : catchmentPopulation;
     const needsBaseReview = !validResponse || responseMinutes > 20;
@@ -4330,7 +5150,7 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
       { label: "Plocha pro kontrolu dostupnosti", value: context.areaHa, unit: "ha" },
       { label: "Hustota obyvatel po záměru", value: context.populationDensity, unit: "obyvatel/ha" },
       { label: "Typ území", value: territory, unit: "" },
-      { label: "Ověřená nejdelší dojezdová doba v projektovém spádu", value: validResponse ? responseMinutes : null, unit: "min" },
+      { label: "Ověřená dojezdová doba ZZS (zákonná mez 20 min)", value: validResponse ? responseMinutes : null, unit: "min" },
       { label: "Ověřeně pokrytí obyvatelé", value: coveredIsValid ? covered : null, unit: "obyvatel" },
       { label: "Obyvatelé bez doloženého pokrytí", value: uncovered, unit: "obyvatel" },
       { label: `Modelová poptávka po výjezdových vozech (1 / ${formatNumber(populationPerVehicle)} obyvatel)`,
@@ -4338,7 +5158,7 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
       { label: "Modelová potřeba nových základen po kontrole dojezdu", value: responseBases, unit: "základen" },
       { label: "Výsledek podmíněného posouzení", value: needsBaseReview ? "Potřeba základny zůstává započtena" : "Nová základna se nezapočítá", unit: "" }
     ], [
-      `Požadovaná mezní dojezdová doba pro projektový spád = 20 min; ${validResponse ? `ověřeno ${formatNumber(responseMinutes)} min` : "skutečný dojezd není doložen"}.`,
+      `Zákonná mez podle § 5 zákona č. 374/2011 Sb. = 20 min; ${validResponse ? `ověřeno ${formatNumber(responseMinutes)} min` : "skutečný dojezd není doložen"}.`,
       needsBaseReview
         ? `Dokud není doloženo vyhovující pokrytí do 20 minut, používá se scénářová kapacita 1 výjezdový vůz na ${formatNumber(populationPerVehicle)} obyvatel; nejméně ${formatNumber(vehiclesPerBase)} vozidla tvoří jednu základnu = ${responseVehicles} vozů.`
         : "Doložený dojezd do celého řešeného území je nejvýše 20 minut; nová základna se proto v bilanci nezapočítá, pokud kraj potvrdí pokrytí."
@@ -4348,13 +5168,78 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
         : `Bez doloženého počtu pokrytých obyvatel se za nepokrytou poptávku považuje celý spád ${formatNumber(uncovered)} obyvatel.`,
       "Plocha a typ území jsou uvedeny pro krajské/GIS posouzení; z plochy samotné nelze spolehlivě převést uliční síť na 20minutový dojezd."
     ], [
-      "Zákon č. 374/2011 Sb., § 5, vyžaduje krajské plánování sítě ZZS a dostupnost do 20 minut od převzetí pokynu k výjezdu, s výjimkami dle zákona. Metodika MMR nestanoví populační kvótu základen. Poměr obyvatel na vůz a počet vozů na základnu jsou editovatelné provozní scénáře, nikoli norma; potvrzuje je krajský plán/poskytovatel.",
+      "Zákon č. 374/2011 Sb., § 5: nejpozději do 20 minut od převzetí pokynu k výjezdu, s výjimkami stanovenými zákonem. Poměr obyvatel na vůz a počet vozů na základnu jsou editovatelné provozní scénáře, nikoli zákonná kvóta; potvrzuje je krajský plán/poskytovatel ZZS.",
       ...(source ? [`Zadaný podklad: ${source}.`] : [])
     ], responseVehicles, [
       catchmentPopulation === null
         ? "Chybí počet obyvatel ve spádu; počet vozů nelze vypočítat."
         : `Modelový počet vozů = max(${formatNumber(vehiclesPerBase)} vozů/základnu, ceil(${formatNumber(uncovered)} nepokrytých obyvatel ÷ ${formatNumber(populationPerVehicle)} obyvatel/vůz)) = ${responseVehicles} vozů při nevyhovujícím nebo neověřeném dojezdu.`
     ]);
+  }
+
+  if (item.id === VOLUNTEER_FIRE_STATION_ID) {
+    const covered = getTargetedPlanInput(item, "JSDH_COVERED_POPULATION");
+    const walkDistance = getTargetedPlanInput(item, "JSDH_WALK_DISTANCE");
+    const availableVehicles = getTargetedPlanInput(item, "JSDH_AVAILABLE_VEHICLES");
+    const populationPerVehicle = getTargetedPlanInput(item, "MODEL_POPULATION_PER_VEHICLE");
+    const source = getTargetedPlanSource(item, "JSDH_COVERAGE_SOURCE");
+    const accessVerified = walkDistance !== null;
+    const accessPasses = accessVerified && walkDistance <= 1000;
+    const coveredIsValid = accessPasses && covered !== null
+      && catchmentPopulation !== null && covered <= catchmentPopulation;
+    const uncovered = coveredIsValid
+      ? Math.max(0, catchmentPopulation - covered) : catchmentPopulation;
+    const requiredVehicles = uncovered === null
+      ? null : Math.ceil(uncovered / populationPerVehicle);
+    const vehicleCapacityVerified = accessPasses
+      && availableVehicles !== null && Number.isInteger(availableVehicles) && availableVehicles >= 0;
+    const additionalVehicles = requiredVehicles === null ? null : vehicleCapacityVerified
+      ? Math.max(0, requiredVehicles - availableVehicles) : requiredVehicles;
+    const needsReview = !accessPasses || !vehicleCapacityVerified || additionalVehicles > 0;
+    const vehiclesForNewStations = requiredVehicles === null ? null : needsReview
+      ? Math.max(1, additionalVehicles ?? 0) : 0;
+    const vehiclesPerStation = getTargetedPlanInput(item, "MODEL_VEHICLES_PER_BASE");
+    const newStations = vehiclesForNewStations === null
+      ? null : Math.ceil(vehiclesForNewStations / vehiclesPerStation);
+    const accessStatus = !accessVerified
+      ? "Neověřeno" : accessPasses ? "Splňuje limit 1 000 m" : "Nesplňuje limit 1 000 m";
+    return estimate([
+      { label: "Obyvatelé řešeného území po záměru", value: projectPopulation, unit: "obyvatel" },
+      { label: "Obyvatelé včetně spádu", value: catchmentPopulation, unit: "obyvatel" },
+      { label: "Typ území", value: territory, unit: "" },
+      { label: "Ověřená pěší vzdálenost k existující zbrojnici", value: accessVerified ? walkDistance : null, unit: "m" },
+      { label: "Standard MMR – nejvýše skutečná pěší trasa", value: 1000, unit: "m" },
+      { label: "Pěší dostupnost existující zbrojnice", value: accessStatus, unit: "" },
+      { label: "Obyvatelé pokrytí stávající jednotkou JSDH", value: coveredIsValid ? covered : null, unit: "obyvatel" },
+      { label: "Obyvatelé bez doloženého pokrytí", value: uncovered, unit: "obyvatel" },
+      { label: "Odhadovaný počet vozidel potřebný pro spád",
+        value: requiredVehicles === null ? null : `${formatNumber(requiredVehicles)} ${czechCountUnit(requiredVehicles, "vozidlo", "vozidla", "vozidel")}`, unit: "" },
+      { label: "Návrhový normativ vozidel (scénář)", value: populationPerVehicle, unit: "obyvatel/vozidlo" },
+      { label: "Doplňkový počet vozidel k zajištění",
+        value: additionalVehicles === null ? null : `${formatNumber(additionalVehicles)} ${czechCountUnit(additionalVehicles, "vozidlo", "vozidla", "vozidel")}`, unit: "" },
+      { label: "Modelová potřeba nových zbrojnic po kontrole pěší dostupnosti",
+        value: newStations,
+        unit: newStations === null ? "" : czechCountUnit(newStations, "zbrojnice JSDH", "zbrojnice JSDH", "zbrojnic JSDH") },
+      { label: "Výsledek posouzení", value: needsReview
+        ? "Potřeba JSDH zůstává započtena" : "Pěší dostupnost i kapacita vyhovují; nová zbrojnice se nezapočítá", unit: "" }
+    ], [
+      `Počet obyvatel ve spádu po záměru = ${catchmentPopulation === null ? "chybí vstup" : `${formatNumber(catchmentPopulation)} obyvatel`}; typ ${territory}.`,
+      accessVerified
+        ? `Ověřená skutečná pěší trasa ${formatNumber(walkDistance)} m ${accessPasses ? "splňuje" : "nesplňuje"} doporučený limit 1 000 m podle metodiky TAČR/MMR.`
+        : "Skutečná pěší trasa k existující zbrojnici není doložena; do ověření zůstává potřeba započtena.",
+      vehicleCapacityVerified
+        ? `Scénářová poptávka = ceil(${formatNumber(uncovered)} nepokrytých obyvatel ÷ ${formatNumber(populationPerVehicle)} obyvatel/vozidlo) = ${requiredVehicles}; po odečtu ${availableVehicles} ověřených vozidel zbývá ${additionalVehicles}.`
+        : `Bez doložené pěší dostupnosti do 1 000 m a ověřené volné kapacity se započítá celý scénář: ceil(${formatNumber(uncovered)} obyvatel ÷ ${formatNumber(populationPerVehicle)} obyvatel/vozidlo) = ${requiredVehicles} vozidel.`,
+      needsReview
+        ? "Pěší standard popisuje dostupnost zbrojnice pro obyvatele; neprokazuje kategorii JPO, akceschopnost ani čas zásahu."
+        : "Pěší dostupnost i zadaná kapacita vozidel vyhovují modelové potřebě; nová zbrojnice se v této bilanci nezapočítá."
+    ], [
+      "TAČR/MMR TB050MMR01, tabulka 1, tištěná str. 12: skutečná pěší docházka do 1 000 m k hasičské zbrojnici dobrovolných hasičů. Jde o nezávazný standard dostupnosti; nenahrazuje klasifikaci JPO, akceschopnost ani zásahový dojezd.",
+      "Model kapacity, počtu vozidel a nové zbrojnice je scénářový. Plošné předpoklady a cena zbrojnice jsou nastaveny na polovinu výchozího modelu HZS a zůstávají upravitelné.",
+      ...(source ? [`Zadaný podklad: ${source}.`] : [])
+    ], vehiclesForNewStations, [uncovered === null
+      ? "Chybí počet obyvatel bez doloženého pokrytí; požadovaný počet vozidel nelze vypočítat."
+      : `Modelová potřeba vozidel = ceil(${formatNumber(uncovered)} nepokrytých obyvatel ÷ ${formatNumber(populationPerVehicle)} obyvatel/vozidlo) = ${formatNumber(requiredVehicles)} vozidel.`]);
   }
 
   if (item.id === "VYB_16A") {
@@ -4364,12 +5249,12 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
     const populationPerVehicle = getTargetedPlanInput(item, "MODEL_POPULATION_PER_VEHICLE");
     const source = getTargetedPlanSource(item, "HZS_COVERAGE_SOURCE");
     const responseLimit = ["A", "B"].includes(territory) ? 7 : 15;
-    const validResponse = Boolean(source) && responseMinutes !== null;
+    const validResponse = responseMinutes !== null;
     const coveredIsValid = covered !== null && catchmentPopulation !== null && covered <= catchmentPopulation;
     const uncovered = coveredIsValid ? Math.max(0, catchmentPopulation - covered) : catchmentPopulation;
     const requiredVehicles = uncovered === null ? null : Math.ceil(uncovered / populationPerVehicle);
     const vehicleCapacityVerified = availableVehicles !== null && Number.isInteger(availableVehicles)
-      && availableVehicles >= 0 && Boolean(source) && validResponse && responseMinutes <= responseLimit;
+      && availableVehicles >= 0 && validResponse && responseMinutes <= responseLimit;
     const additionalVehicles = requiredVehicles === null ? null : vehicleCapacityVerified
       ? Math.max(0, requiredVehicles - availableVehicles) : requiredVehicles;
     const needsReview = !validResponse || responseMinutes > responseLimit
@@ -4393,7 +5278,9 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
       { label: "Návrhový normativ vozidel (scénář)", value: populationPerVehicle, unit: "obyvatel/vozidlo" },
       { label: "Doplňkový počet vozidel k zajištění",
         value: additionalVehicles === null ? null : `${formatNumber(additionalVehicles)} ${czechCountUnit(additionalVehicles, "vozidlo", "vozidla", "vozidel")}`, unit: "" },
-      { label: "Modelová potřeba nových stanic po kontrole dojezdu", value: newStations, unit: "stanic" },
+      { label: "Modelová potřeba nových stanic po kontrole dojezdu",
+        value: newStations,
+        unit: newStations === null ? "" : czechCountUnit(newStations, "stanice HZS", "stanice HZS", "stanic HZS") },
       { label: "Výsledek posouzení", value: needsReview ? "Potřeba HZS zůstává započtena" : "Dojezd vyhovuje; potřeba se nezapočítá", unit: "" }
     ], [
       `Počet obyvatel ve spádu po záměru = ${catchmentPopulation === null ? "chybí vstup" : `${formatNumber(catchmentPopulation)} obyvatel`}; typ ${territory}; plocha ${context.areaHa === null ? "chybí vstup" : `${formatNumber(context.areaHa)} ha`}.`,
@@ -4417,10 +5304,8 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
   if (item.id === "VYB_17A") {
     const responseMinutes = getTargetedPlanInput(item, "POLICE_RESPONSE_MINUTES");
     const source = getTargetedPlanSource(item, "POLICE_COVERAGE_SOURCE");
-    const localCoverage = ["A", "B"].includes(territory) ? getTargetedCoverageEstimate(600) : null;
-    const responseValid = ["A", "B"].includes(territory)
-      && Boolean(source) && responseMinutes !== null;
-    const responseLimit = 10;
+    const responseValid = ["A", "B", "C"].includes(territory) && responseMinutes !== null;
+    const responseLimit = ["A", "B"].includes(territory) ? 10 : territory === "C" ? 15 : null;
     const populationPerOfficer = getTargetedPlanInput(item, "MODEL_POPULATION_PER_OFFICER");
     const officersPerStation = getTargetedPlanInput(item, "MODEL_CAPACITY_PER_FACILITY");
     const modeledOfficers = catchmentPopulation === null || !populationPerOfficer ? null
@@ -4440,19 +5325,21 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
       { label: "Scénářový počet policistů k zajištění", value: modeledOfficers, unit: "policistů" },
       { label: "Modelový počet služeben", value: formatStations(modeledStations), unit: "" },
       { label: "Modelová potřeba nových služeben", value: formatStations(proposedStations), unit: "" },
-      { label: "Ověřená dojezdová doba hlídky (typ A/B)", value: responseValid ? responseMinutes : null, unit: "min" },
-      { label: "Orientační body pěší sítě do 600 m", value: localCoverage?.count ?? null, unit: "bodů" }
+      { label: "Doporučená mez zásahu podle typu", value: responseLimit === null ? "D – neměří se" : `${formatNumber(responseLimit)} min`, unit: "" },
+      { label: "Ověřená doba zásahu hlídky", value: responseValid ? responseMinutes : null, unit: "min" }
     ], [
       `Modelový počet policistů = ${catchmentPopulation === null ? "chybí počet obyvatel" : `${formatNumber(catchmentPopulation)} obyvatel ÷ ${formatNumber(populationPerOfficer)} obyvatel/policistu = ${formatNumber(modeledOfficers)} policistů`}; modelová služebna počítá nejvýše s ${formatNumber(officersPerStation)} policisty.`,
       `Typ ${territory}, plocha ${context.areaHa === null ? "chybí vstup" : `${formatNumber(context.areaHa)} ha`}, obyvatelé ve spádu ${catchmentPopulation === null ? "chybí vstup" : formatNumber(catchmentPopulation)}.`,
-      responseValid
-        ? `Ověřený dojezd hlídky ${formatNumber(responseMinutes)} min ${responseMinutes <= responseLimit ? "splňuje" : "nesplňuje"} orientační mez ${responseLimit} min.`
-        : `Dojezd hlídky není doložen; navržený počet služeben zůstává v modelu. V typech C/D se dostupnost ověřuje v rámci ORP.`,
+      responseLimit === null
+        ? "Typ D nemá v tomto doporučení požadavek na dobu zásahu; modelovaný počet policistů a služeben zůstává zobrazen jako informativní scénář."
+        : responseValid
+          ? `Ověřený zásah hlídky ${formatNumber(responseMinutes)} min ${responseMinutes <= responseLimit ? "splňuje" : "nesplňuje"} doporučenou mez ${responseLimit} min pro typ ${territory}.`
+          : `Doba zásahu hlídky pro typ ${territory} není doložena; modelovaný počet služeben zůstává ve scénáři.`,
       proposedStations === 0
-        ? "Vyhovující ověřený dojezd v typu A/B znamená nulovou modelovou potřebu nové služebny; personální potřeba se přesto uvádí pro kontrolu pokrytí."
+        ? `Vyhovující ověřený zásah v typu ${territory} znamená nulovou modelovou potřebu nové služebny; personální potřeba se přesto uvádí pro kontrolu pokrytí.`
         : `Pro návrhovou výměru se uvažuje ${formatNumber(proposedStations)} služeben, každá pro nejvýše ${formatNumber(officersPerStation)} policistů; nejde o závazný služební normativ.`
     ], [
-      "Pracovní list Cluster_Doprava_a_Bezpeci uvádí pro A/B dojezd hlídky do 10 minut a pěší dostupnost 600 m; pro C/D obsluhu v rámci ORP. Zákon č. 273/2008 Sb. nestanoví kvótu policistů ani služeben na obyvatele. Poměr obyvatel na policistu a kapacita policistů na služebnu jsou editovatelné scénářové předpoklady, nikoli oficiální český personální normativ."
+      "Doporučení interních metodik policie: typ A/B – zásah do 10 minut; typ C – do 15 minut; typ D – doba se neměří. Nejde o standard metodiky MMR ani o zákonnou povinnost zřídit služebnu. Zákon č. 273/2008 Sb. nestanoví kvótu policistů ani služeben na obyvatele; poměr obyvatel na policistu a kapacita služebny jsou scénářové předpoklady."
     ], proposedStations === null || modeledOfficers === null ? null : proposedStations === 0 ? 0 : modeledOfficers, [
       catchmentPopulation === null || !populationPerOfficer
         ? "Chybí počet obyvatel nebo poměr obyvatel na policistu; personální potřebu nelze vypočítat."
@@ -4469,7 +5356,7 @@ function getTargetedPlanEstimate(item, includeSpatialFloor = false) {
     const capacity = getTargetedPlanInput(item, "SHELTER_EXISTING_CAPACITY");
     const distance = getTargetedPlanInput(item, "SHELTER_ACCESS_DISTANCE");
     const source = getTargetedPlanSource(item, "SHELTER_VERIFICATION_SOURCE");
-    const valid = Boolean(source) && demand !== null
+    const valid = demand !== null
       && capacity !== null && Number.isInteger(capacity) && distance !== null;
     const usableCapacity = valid && distance <= 500 ? capacity : valid ? 0 : null;
     const deficit = demand === null ? null : valid ? Math.max(0, demand - usableCapacity) : demand;
@@ -4562,6 +5449,12 @@ function getTargetedPlanSummaryText(item, estimate) {
       ? "nelze vypočítat"
       : `${formatNumber(stations)} ${czechCountUnit(stations, "stanice", "stanice", "stanic")}`;
   }
+  if (item.id === VOLUNTEER_FIRE_STATION_ID) {
+    const stations = metricValue("Modelová potřeba nových zbrojnic po kontrole pěší dostupnosti");
+    return stations === null || stations === undefined
+      ? "nelze vypočítat"
+      : `${formatNumber(stations)} ${czechCountUnit(stations, "zbrojnice JSDH", "zbrojnice JSDH", "zbrojnic JSDH")}`;
+  }
   const status = metricValue("Výsledek podmíněného posouzení")
     ?? metricValue("Výsledek posouzení")
     ?? metricValue("Přítomnost v obci podle typu a populace");
@@ -4589,7 +5482,7 @@ function getTargetedPlanSummaryText(item, estimate) {
     const deficit = metricValue("Poptávka nepokrytá ověřenou kapacitou úkrytů");
     return deficit === null || deficit === undefined
       ? "není vypočteno"
-      : `${formatNumber(deficit)} osob deficitu`;
+      : `${formatNumber(deficit)} osob`;
   }
   return "—";
 }
@@ -4713,7 +5606,7 @@ function getProjectPlanningEstimate(item, kind) {
     const buildingCost = buildingRate === null ? null : Math.round(buildingVolume * buildingRate);
     const surfaceCost = Math.round(surfaceVolume * surfaceRatePerM3);
     const surcharge = Math.max(0,
-      numericOrNull(getParkingEstimateValue(item, kind, "ITEM_COST_SURCHARGE")) ?? 0.23);
+      numericOrNull(getParkingEstimateValue(item, kind, "ITEM_COST_SURCHARGE")) ?? 0.08);
     const zrn = buildingCost === null ? null : buildingCost + surfaceCost;
     const cost = zrn === null ? null : Math.round(zrn * (1 + surcharge));
     return {
@@ -4801,7 +5694,7 @@ function getProjectPlanningEstimate(item, kind) {
     const pavingRate = Math.max(0,
       numericOrNull(getItemEstimateValue(item, "PUBLIC_SPACE_PAVING_RATE_M2")) ?? 0);
     const costSurcharge = Math.max(0,
-      numericOrNull(getItemEstimateValue(item, "ITEM_COST_SURCHARGE")) ?? 0.23);
+      numericOrNull(getItemEstimateValue(item, "ITEM_COST_SURCHARGE")) ?? 0.08);
     const minimumArea = Math.ceil(qualifyingAreaHa * 500);
     const pavedArea = minimumArea * pavedShare;
     const zrn = Math.round(pavedArea * pavingRate);
@@ -4825,7 +5718,7 @@ function getProjectPlanningEstimate(item, kind) {
     const landscapingRate = Math.max(0,
       numericOrNull(getItemEstimateValue(item, "PARK_LANDSCAPING_RATE_M2")) ?? 500);
     const costSurcharge = Math.max(0,
-      numericOrNull(getItemEstimateValue(item, "ITEM_COST_SURCHARGE")) ?? 0.23);
+      numericOrNull(getItemEstimateValue(item, "ITEM_COST_SURCHARGE")) ?? 0.08);
     const minimumArea = Math.ceil(parkCount * areaPerParkHa * 10000);
     const zrn = Math.round(minimumArea * landscapingRate);
     return {
@@ -5149,6 +6042,8 @@ function getProjectPlanningEstimate(item, kind) {
     rateSource = "RTS";
   } else if (numericOrNull(item.unitPrice) > 0) {
     rateSource = "workbook-unit-cost";
+  } else if (item.socialDemographic) {
+    rateSource = estimateComparableUnitRate(item) !== null ? "comparable-estimate" : "missing";
   } else if (ITEM_ESTIMATE_SCENARIOS[item.id]) {
     rateSource = "scenario-estimate";
   } else if (numericOrNull(item.cost) > 0 && getItemEstimateDefaultQuantity(item) > 0) {
@@ -5231,7 +6126,10 @@ function renderProjectEstimateControls(item, kind, estimate, targetedInputScope 
           ? field.code !== "MODEL_POPULATION_PER_FTE"
             && field.code !== "MODEL_MINIMUM_POPULATION_PER_FTE"
             && field.code !== "MODEL_MINIMUM_DENSITY_PER_HA"
-            && !["GYNECOLOGY_WALK_DISTANCE", "GYNECOLOGY_DRIVE_MINUTES", "GYNECOLOGY_ACCESS_SOURCE"].includes(field.code)
+            && ![
+              "GYNECOLOGY_WALK_DISTANCE", "GYNECOLOGY_DRIVE_MINUTES", "GYNECOLOGY_ACCESS_SOURCE",
+              "HEALTHCARE_WALK_DISTANCE", "HEALTHCARE_DRIVE_MINUTES", "HEALTHCARE_ACCESS_SOURCE"
+            ].includes(field.code)
           : field.code !== "MODEL_LEGAL_PATIENTS_PER_DOCTOR"))
       && !(targetedInputScope === "model" && field.code === "MODEL_COST_PER_M3"
         && getRtsBuildingGroup(item)));
@@ -5308,20 +6206,30 @@ function renderProjectEstimateControls(item, kind, estimate, targetedInputScope 
     note = "Uživatelský scénář: výchozí práh 3 000 obyvatel a jedna prodejna na 3 000 nových obyvatel. Jde o předpoklad, nikoli standard MMR nebo zákonnou povinnost. Plocha a cena jsou editovatelné; cena využívá RTS JKSO 801.8, pokud je sazba pro zvolenou konstrukci dostupná.";
   } else if (estimate?.type === "item") {
     fields = ITEM_ESTIMATE_INPUTS.filter((field) =>
-      !getRtsBuildingGroup(item) || !["ITEM_RTS_RATE", "ITEM_RTS_RATE_BASIS"].includes(field.code));
-    note = estimate.rateSource === "RTS"
+      (GENERIC_ITEM_ESTIMATE_CODES.has(field.code)
+        || item.socialDemographic && field.code === "SOCIAL_DEMOGRAPHIC_COEFFICIENT")
+      && !(item.socialDemographic && field.code === "ITEM_QUANTITY")
+      && (!getRtsBuildingGroup(item)
+        || !["ITEM_RTS_RATE", "ITEM_RTS_RATE_BASIS"].includes(field.code)));
+    note = item.socialDemographic
+      ? `Kapacita = počet obyvatel × demografický koeficient. Výměrové a cenové parametry zůstávají upravitelné níže. ${item.socialDemographic.source}`
+      : estimate.rateSource === "RTS"
       ? "Předpoklady se ukládají pro tuto položku. Cena vychází z RTS; chybějící výměrové koeficienty jsou pracovní odhady."
       : estimate.rateSource === "missing"
         ? "Předpoklady se ukládají pro tuto položku. Cena není v RTS ani v porovnatelných datech; sazbu lze zadat jako vlastní odhad mimo RTS."
         : estimate.rateSource === "scenario-estimate"
             ? item.id === "VYB_04B"
-              ? "RTS v dostupném podkladu cenu veřejné parkové zeleně neuvádí. Výchozí sazba 2 500 000 Kč/park (5 000 m²) je scénářový odhad 500 Kč/m² před přirážkou 23 % a odpovídá dolní hranici 0,5 ha z MMR; upravte ji podle návrhu a místních cen."
+              ? "RTS v dostupném podkladu cenu veřejné parkové zeleně neuvádí. Výchozí sazba 2 500 000 Kč/park (5 000 m²) je scénářový odhad 500 Kč/m² před přirážkou 8 % a odpovídá dolní hranici 0,5 ha z MMR; upravte ji podle návrhu a místních cen."
               : "Předpoklady se ukládají pro tuto položku. Výchozí cena i výměrové koeficienty jsou orientační odhady mimo RTS; upravte je podle záměru a místních cen."
         : "Předpoklady se ukládají pro tuto položku. Cena je orientační cenový odhad mimo RTS; ověřte ji podle nabídky nebo projektu.";
+  }
+  if (["item", "supermarket", "school"].includes(estimate?.type)) {
+    note += " Koeficienty užitné plochy a obestavěného prostoru určují výměry a při cenovém základu Kč/m³ také cenu. Areál a zpevněná plocha jsou prostorové bilance bez samostatné sazby. Investice používá zvolený cenový základ, fixní náklad a přirážku.";
   }
   if (!fields.length) return null;
 
   const disclosure = createElement("details", "project-estimate-controls");
+  disclosure.open = Boolean(item.socialDemographic);
   addDisclosureSummary(disclosure, estimate?.type === "targeted"
     ? targetedInputScope === "model" ? "Upravit předpoklady návrhového výpočtu"
       : "Upravit údaje pro ověření okolní vybavenosti"
@@ -5345,6 +6253,15 @@ function renderProjectEstimateControls(item, kind, estimate, targetedInputScope 
       ? { ...field, code: `${field.code}_${kind.toUpperCase()}` }
       : estimate?.type === "targeted"
       ? { ...field, color: TARGETED_FIELD_COLORS[field.code] || field.color }
+      : item.socialDemographic && field.code === "SOCIAL_DEMOGRAPHIC_COEFFICIENT"
+      ? {
+        ...field,
+        label: `Demografický koeficient kapacity (${item.socialDemographic.unitLabel} / obyvatele)`,
+        min: 0,
+        max: 1,
+        step: 0.00001,
+        unit: `${item.socialDemographic.unitLabel} / obyvatele`
+      }
       : ["item", "supermarket", "school"].includes(estimate?.type) && field.code === "ITEM_RTS_RATE"
       ? { ...field, label: estimate.type === "school" || estimate.rateSource === "RTS"
         ? "Cena RTS dle měrné jednotky" : "Odhad ceny mimo RTS" }
@@ -5728,7 +6645,17 @@ function renderProjectEstimateCalculation(item, kind, openingEquations = [], ope
   const controls = estimate?.type === "infrastructure-reserve"
     ? null : estimate ? renderProjectEstimateControls(item, kind, estimate) : null;
   if (controls) section.append(controls);
-  openingEquations.forEach((equation) => appendCalculationText(section, equation, item, kind));
+  if (item.socialDemographic) {
+    const objectAssumptions = renderObjectAssumptionControls(item, kind);
+    if (objectAssumptions) section.append(objectAssumptions);
+  }
+  openingEquations.forEach((equation) => {
+    if (item.socialDemographic) {
+      section.append(createElement("p", "calculation-equation", equation));
+    } else {
+      appendCalculationText(section, equation, item, kind);
+    }
+  });
   const sources = [...openingSources];
   if (!estimate) {
     if (openingEquations.length) {
@@ -6440,7 +7367,7 @@ function getDisplayedCost(item, calc, kind) {
       || item.cost === null || item.cost < 0) return null;
     return item.cost * count / modelCount;
   }
-  const isDelta = kind === "recommended" && getPrimary("REZIM_STD") !== "STANDARD"
+  const isDelta = kind === "recommended" && !isCompleteStandardMode()
     && hasStandardComparison(item) && !SCHOOL_CAPACITY_ITEM_IDS.has(item.id);
   if (isDelta && getStandardComparison(item).delta === null) return null;
   if (hasStandardComparison(item) && (hasAppliedStandardTarget(item) || isDelta)) {
@@ -6453,16 +7380,22 @@ function getDisplayedCost(item, calc, kind) {
 function updateRequirementCardSummary(card, item, calc) {
   const quantity = card.querySelector(".requirement-quantity");
   if (quantity) {
+    const kind = card.dataset.kind || "legal";
+    const projectEstimate = getProjectPlanningEstimate(item, kind);
     if (item.id === "VYB_05B") {
       const hallCount = getItemEstimateQuantity(item);
       quantity.textContent = hallCount > 0
         ? `${formatNumber(hallCount)} ${hallCount === 1 ? "hala" : "haly"}`
         : "bez samostatné haly";
+    } else if (projectEstimate?.type === "polyclinic") {
+      quantity.textContent = `${formatNumber(projectEstimate.clinicCount)} ordinací`;
     } else {
       const summaryValue = getSummaryRequirementQuantity(calc);
       quantity.textContent = summaryValue === null
-        ? "bez počtu" : `${formatNumber(summaryValue, 2)} ${text(getRequirementUnit(item), "")}`;
+        ? "bez počtu" : formatRequirementSummaryAmount(item, summaryValue);
     }
+    quantity.textContent = formatRequirementSummaryQuantity(item,
+      kind, quantity.textContent);
   }
   const capacitySummary = card.querySelector(".requirement-capacity");
   if (capacitySummary && calc.usesDemandBasedCapacity) {
@@ -6692,15 +7625,11 @@ function renderRequirementList(parent, kind, records) {
       rule[RULE_HEADERS.area], rule[RULE_HEADERS.description], rule[RULE_HEADERS.source]]
       .some((value) => String(value ?? "").toLocaleLowerCase("cs").includes(query));
   });
-  const generalRules = kind === "legal"
-    ? getGeneralObligationRules(state.hideUnrealizedItems
-      ? records.filter((item) => selectedKeys.has(item.key)) : null)
-    : [];
   const itemCount = visibleItems.length + Number(showSpecialParking);
   badge.textContent = linkedRules.length
     ? `Položky: ${itemCount} · ID k přiřazení: ${linkedRules.length}`
     : String(itemCount);
-  if (!items.length && !linkedRules.length && !generalRules.length && !showSpecialParking) {
+  if (!items.length && !linkedRules.length && !showSpecialParking) {
     const empty = createElement("div", "empty-list", state.hideUnrealizedItems
       ? "V tomto seznamu nejsou položky vybrané k realizaci."
       : kind === "legal"
@@ -6722,7 +7651,7 @@ function renderRequirementList(parent, kind, records) {
       || item.id === RESIDENT_PARKING_RESERVE_ID ? "recommended"
       : isInfrastructureReserveItem(item) ? "infrastructure" : kind;
     const listSatisfied = (item) => itemKind(item) === "recommended"
-      && getPrimary("REZIM_STD") !== "STANDARD"
+      && !isCompleteStandardMode()
       && hasStandardComparison(item)
       && !SCHOOL_CAPACITY_ITEM_IDS.has(item.id)
       ? getStandardComparison(item).delta === 0
@@ -6731,18 +7660,57 @@ function renderRequirementList(parent, kind, records) {
     const rightZero = listSatisfied(right);
     return Number(leftZero) - Number(rightZero);
   };
-  items.sort(sortItems).forEach((item) => {
-    const itemKind = item.id === RESIDENT_PARKING_RECOMMENDED_ID
-      || item.id === RESIDENT_PARKING_RESERVE_ID ? "recommended"
-      : isInfrastructureReserveItem(item) ? "infrastructure" : kind;
-    parent.append(renderItemCard(item, itemKind));
-  });
-  if (kind === "legal" && showSpecialParking) {
-    parent.append(renderSpecialBuildingParkingCard(specialParkingEstimate));
+  items.sort(sortItems);
+  const groupedItems = new Map();
+  for (const item of items) {
+    if (!groupedItems.has(item.category)) groupedItems.set(item.category, []);
+    groupedItems.get(item.category).push(item);
   }
-  if (generalRules.length) parent.append(renderGeneralObligations(generalRules));
+  const specialParkingCategory = "DOPRAVA, PARKOVÁNÍ A BEZPEČNOST";
+  if (kind === "legal" && showSpecialParking
+    && !groupedItems.has(specialParkingCategory)) {
+    groupedItems.set(specialParkingCategory, []);
+  }
+  const orderedCategories = [
+    ...state.categories.filter((category) => groupedItems.has(category)),
+    ...[...groupedItems.keys()].filter((category) => !state.categories.includes(category))
+  ];
+  for (const category of orderedCategories) {
+    const group = createElement("section", "requirement-topic-group");
+    const headingRow = createElement("div", "requirement-topic-heading-row");
+    const categoryIndex = Math.max(0, state.categories.indexOf(category)) % CATEGORY_COLORS.length;
+    const groupToggle = createElement("button",
+      `requirement-topic-toggle category-${categoryIndex} shape-${categoryShape(category)}`);
+    groupToggle.type = "button";
+    groupToggle.dataset.realizationGroupToggle = "";
+    groupToggle.setAttribute("aria-label", `Vybrat všechny položky skupiny ${category}`);
+    groupToggle.setAttribute("aria-pressed", "false");
+    groupToggle.append(createElement("span",
+      `category-dot shape-${categoryShape(category)}`, ""));
+    headingRow.append(groupToggle);
+    headingRow.append(createElement("h4", "requirement-topic-heading", category));
+    group.append(headingRow);
+    for (const item of groupedItems.get(category)) {
+      const itemKind = item.id === RESIDENT_PARKING_RECOMMENDED_ID
+        || item.id === RESIDENT_PARKING_RESERVE_ID ? "recommended"
+        : isInfrastructureReserveItem(item) ? "infrastructure" : kind;
+      group.append(renderItemCard(item, itemKind));
+    }
+    if (kind === "legal" && category === specialParkingCategory && showSpecialParking) {
+      group.append(renderSpecialBuildingParkingCard(specialParkingEstimate));
+    }
+    const selectableControls = [...group.querySelectorAll("button[data-realization-item-key]")]
+    .filter((control) => !control.disabled);
+    const groupSelected = selectableControls.length > 0
+    && selectableControls.every((control) => control.getAttribute("aria-pressed") === "true");
+    groupToggle.setAttribute("aria-pressed", String(groupSelected));
+    groupToggle.classList.toggle("is-selected", groupSelected);
+    groupToggle.setAttribute("aria-label",
+    `${groupSelected ? "Odebrat výběr" : "Vybrat všechny položky"} skupiny ${category}`);
+    parent.append(group);
+  }
   linkedRules.forEach((rule) => parent.append(renderUnlinkedRuleCard(rule, kind)));
-  if (!visibleItems.length && !linkedRules.length && !generalRules.length && !showSpecialParking) {
+  if (!visibleItems.length && !linkedRules.length && !showSpecialParking) {
     const empty = createElement("div", "empty-list", "V tomto seznamu nejsou položky vybrané k realizaci.");
     empty.dataset.realizationEmpty = "";
     parent.append(empty);
@@ -6752,6 +7720,7 @@ function renderRequirementList(parent, kind, records) {
 
 function getRequirementItems(records, kind) {
   return records.filter((item) => {
+    if (REMOVED_SOCIAL_SERVICE_ITEM_IDS.has(item.id)) return false;
     if (kind === "reserve") return isRequirementReserveItem(item);
     if (isRequirementReserveItem(item)) return false;
     if (item.id === RESIDENT_PARKING_RECOMMENDED_ID) return kind === "review";
@@ -6768,6 +7737,7 @@ function getRequirementItems(records, kind) {
     if (kind === "legal") {
       if (item.id === "VYB_20") return false;
       return item.id === RESIDENT_PARKING_ID || item.id === "VYB_17B"
+        || item.id === "VYB_09D"
         || hasLegalRule && !RECOMMENDED_SCENARIO_ITEM_IDS.has(item.id);
     }
     if (kind === "recommended") return isResidentParkingItem(item)
@@ -6854,7 +7824,9 @@ function getSpecialBuildingParkingEstimate() {
     };
   });
   const estimatedStalls = rateResults.reduce((sum, rate) => sum + rate.stalls, 0);
-  const stalls = estimatedStalls;
+  const override = state.overrides[SPECIAL_BUILDING_PARKING_REALIZATION_KEY];
+  const overrideQuantity = numericOrNull(override?.quantity);
+  const stalls = hasActiveUserOverride(override) ? overrideQuantity : estimatedStalls;
   const parkingSource = state.items.find((item) => item.id === RESIDENT_PARKING_ID);
   const parkingValue = (code, fallback) => numericOrNull(saved[code]) ?? (parkingSource
     ? numericOrNull(getParkingEstimateValue(parkingSource, "legal", code)) : null) ?? fallback;
@@ -6863,7 +7835,7 @@ function getSpecialBuildingParkingEstimate() {
   const buildingRate = Math.max(0, value("BUILDING_RATE_M3", parkingValue("PARKING_BUILDING_RATE_M3", 8995)));
   const surfaceRate = Math.max(0, value("SURFACE_RATE_M3", parkingValue("PARKING_SURFACE_RATE_M3", 7500)));
   const surfaceAreaPerStall = Math.max(0, value("SURFACE_AREA_PER_STALL_M2", parkingValue("PARKING_SURFACE_AREA_PER_STALL_M2", 25)));
-  const surcharge = Math.max(0, value("COST_SURCHARGE", parkingValue("ITEM_COST_SURCHARGE", 0.23)));
+  const surcharge = Math.max(0, value("COST_SURCHARGE", parkingValue("ITEM_COST_SURCHARGE", 0.08)));
   const buildingStalls = stalls * buildingShare;
   const surfaceStalls = stalls - buildingStalls;
   const pavedArea = surfaceStalls * surfaceAreaPerStall;
@@ -6878,6 +7850,8 @@ function getSpecialBuildingParkingEstimate() {
     rateResults,
     facilityCalculations,
     estimatedStalls,
+    hasUserOverride: hasActiveUserOverride(override),
+    overrideQuantity,
     stalls,
     buildingShare,
     buildingStalls,
@@ -6900,10 +7874,16 @@ function renderSpecialBuildingParkingCard(estimate) {
   card.dataset.specialParkingFacilityCount = String(estimate.facilityCount);
   const selected = getRealizationPlan().selectedKeys
     .has(SPECIAL_BUILDING_PARKING_REALIZATION_KEY);
+  const nearbyCapacity = numericOrNull(
+    state.capacityEdits[SPECIAL_BUILDING_PARKING_REALIZATION_KEY]?.quantity);
+  const capacitySatisfied = state.capacityEdits[
+    SPECIAL_BUILDING_PARKING_REALIZATION_KEY]?.satisfiesNearbyCapacity === true
+    || nearbyCapacity !== null && nearbyCapacity >= estimate.stalls;
   const isZero = estimate.stalls === 0;
   card.classList.toggle("is-zero", isZero);
+  card.classList.toggle("is-capacity-satisfied", capacitySatisfied);
   card.classList.toggle("is-realization-selected", selected);
-  card.open = true;
+  card.open = false;
   const summary = document.createElement("summary");
   summary.className = "special-parking-summary";
   const top = createElement("div", "requirement-card-top");
@@ -6911,10 +7891,12 @@ function renderSpecialBuildingParkingCard(estimate) {
     `category-dot-control${selected ? " is-selected" : ""}`);
   realizationButton.type = "button";
   realizationButton.dataset.realizationItemKey = SPECIAL_BUILDING_PARKING_REALIZATION_KEY;
+  realizationButton.disabled = capacitySatisfied;
   realizationButton.setAttribute("aria-pressed", String(selected));
   realizationButton.setAttribute("aria-label",
     `${selected ? "Zrušit výběr" : "Vybrat"} k realizaci: Parkování realizovaných specializovaných staveb`);
   realizationButton.title = selected ? "Odebrat z realizace" : "Vybrat k realizaci";
+  if (capacitySatisfied) realizationButton.title = "Kapacita okolí je označena jako dostatečná.";
   realizationButton.append(createElement("span", "category-dot shape-circle"));
   top.append(realizationButton);
   const title = createElement("span", "requirement-title");
@@ -6931,6 +7913,8 @@ function renderSpecialBuildingParkingCard(estimate) {
   const content = createElement("div", "special-parking-content");
   content.append(createElement("p", "special-parking-note",
     "Odhad sčítá pouze nové parkování pro vybavenosti označené k realizaci; nezahrnuje rezidentské parkování. Počty se odvozují z HPP jednotlivých realizovaných objektů a editovatelných koeficientů. Pro obchody je výchozí pravidlo 1 stání / 30 m² prodejní HPP a podíl prodejní plochy z HPP je nastaven na 80 %. Koeficienty ostatních typů jsou scénářové předpoklady, nikoli sazby stanovené vyhláškou; ověřte konkrétní stavbu podle přílohy č. 1 vyhlášky č. 146/2024 Sb."));
+  const results = createElement("section", "special-parking-results");
+  results.append(createElement("h4", "", RESULTS_HEADING));
   const metrics = createElement("div", "special-parking-metrics");
   const addMetric = (label, value, unit = "") => {
     const metric = createElement("div", "item-result-metric");
@@ -6941,11 +7925,16 @@ function renderSpecialBuildingParkingCard(estimate) {
   addMetric("Realizované budovy s použitelnou výměrou", estimate.facilityCount, "budov");
   addMetric("Celková HPP realizovaných budov", estimate.totalFloorArea, "m²");
   addMetric("Započtená HPP prodejní plochy obchodů", estimate.totalSalesArea, "m²");
-  addMetric("Modelová potřeba parkovacích stání", estimate.stalls, "stání");
+  addMetric("Modelová potřeba parkovacích stání", estimate.estimatedStalls, "stání");
+  if (estimate.hasUserOverride) {
+    addMetric("Uživatelský návrh parkovacích stání", estimate.stalls, "stání");
+  }
   addMetric("Z toho parkovací dům / venkovní", `${formatNumber(estimate.buildingStalls)} / ${formatNumber(estimate.surfaceStalls)}`, "stání");
   addMetric("Orientační zpevněná plocha", estimate.pavedArea, "m²");
   addMetric("Orientační investice včetně přirážky", estimate.cost, "Kč");
-  content.append(metrics);
+  results.append(metrics);
+  content.append(results);
+  content.append(renderSpecialParkingCapacityEditor(estimate));
   const rateDetails = createElement("details", "special-parking-inputs");
   addDisclosureSummary(rateDetails, "Koeficienty a cena – editovatelné předpoklady");
   const rateFields = createElement("div", "special-parking-rate-fields");
@@ -7023,8 +8012,71 @@ function renderSpecialBuildingParkingCard(estimate) {
     content.append(createElement("p", "special-parking-warning",
       `${estimate.unestimatedFacilities} realizovaných položek nemá vypočtenou HPP, a proto zatím nejsou do odhadu parkování zahrnuty.`));
   }
+  content.append(createFeedbackButton(
+    "Parkování realizovaných specializovaných staveb (splnění vyhlášky č. 146/2024 Sb.)"
+  ));
   card.append(content);
   return card;
+}
+
+function renderSpecialParkingCapacityEditor(estimate) {
+  const disclosure = createElement("details", "item-section capacity-section");
+  addDisclosureSummary(disclosure, "Ověřený stav v okolí a uživatelský návrh");
+  disclosure.append(renderAvailabilitySearch({
+    id: SPECIAL_BUILDING_PARKING_REALIZATION_KEY,
+    name: "Parkování realizovaných specializovaných staveb"
+  }));
+  const editor = createElement("section", "capacity-editor");
+  const heading = createElement("div", "capacity-heading");
+  heading.append(createElement("span", "capacity-unit", "Jednotka pro ověření: stání"));
+  editor.append(heading);
+  const controls = createElement("div", "capacity-controls");
+  const capacity = state.capacityEdits[SPECIAL_BUILDING_PARKING_REALIZATION_KEY] || {};
+  const override = state.overrides[SPECIAL_BUILDING_PARKING_REALIZATION_KEY] || {};
+  const addNumberField = (label, value, field, placeholder) => {
+    const wrapper = createTextInput(label, value, {
+      id: SPECIAL_BUILDING_PARKING_REALIZATION_KEY,
+      field,
+      kind: "number"
+    }, placeholder);
+    const input = wrapper.querySelector("input");
+    input.type = "number";
+    input.min = "0";
+    input.step = "any";
+    controls.append(wrapper);
+  };
+  addNumberField("Celková ověřená kapacita v okolí (stání)",
+    capacity.quantity, "quantity", "Prázdné = neověřeno");
+  controls.append(createTextInput("Zdroj / ověření (nepovinné)",
+    capacity.source, { id: SPECIAL_BUILDING_PARKING_REALIZATION_KEY, field: "source" },
+    "Např. GIS, plán nebo správce"));
+  controls.append(createTextInput("Datum (doplní se automaticky)",
+    capacity.date, { id: SPECIAL_BUILDING_PARKING_REALIZATION_KEY, field: "date" }));
+  controls.append(createTextInput("Poznámka k ověření",
+    capacity.note, { id: SPECIAL_BUILDING_PARKING_REALIZATION_KEY, field: "note" },
+    "Rozsah, kapacita a omezení"));
+  addNumberField("Uživatelsky upravený návrh (stání)",
+    override.quantity, "override", "Ponechat modelovou hodnotu");
+  controls.append(createTextInput("Autor přepisu (nepovinné)",
+    override.author, { id: SPECIAL_BUILDING_PARKING_REALIZATION_KEY, field: "overrideAuthor" },
+    "Volitelné"));
+  controls.append(createTextInput("Důvod / poznámka k úpravě návrhu (nepovinné)",
+    override.note, { id: SPECIAL_BUILDING_PARKING_REALIZATION_KEY, field: "overrideNote" },
+    "Volitelné"));
+  editor.append(controls);
+  const verifiedCapacity = numericOrNull(capacity.quantity);
+  const remaining = verifiedCapacity === null ? null
+    : Math.max(0, estimate.stalls - verifiedCapacity);
+  editor.append(createElement("p", "capacity-result",
+    verifiedCapacity === null
+      ? `Modelová potřeba činí ${formatValue(estimate.stalls, "stání")}; ověřená kapacita v okolí zatím není zadána.`
+      : `Modelová potřeba činí ${formatValue(estimate.stalls, "stání")}, ověřená kapacita v okolí ${formatValue(verifiedCapacity, "stání")}; zbývající potřeba je ${formatValue(remaining, "stání")}.`));
+  editor.append(createElement("p", "capacity-caution",
+    "Zadání kapacity, zdroje, poznámky, autora i uživatelského návrhu je dobrovolné. Výpočet parkování se řídí zvolenými koeficienty; uživatelský návrh přepočítá množství i cenu."));
+  editor.append(createElement("p", "capacity-caution capacity-audit-summary",
+    getUserOverrideAuditSummary(override, "stání")));
+  disclosure.append(editor);
+  return disclosure;
 }
 
 function updateRequirementListVisibility(list, selectedKeys) {
@@ -7054,7 +8106,7 @@ function updateRequirementListVisibility(list, selectedKeys) {
     group.hidden = !group.querySelector(".requirement-card:not([hidden])");
   });
   const visibleCards = cards.filter((card) => !card.hidden).length;
-  const hasOtherContent = Boolean(list.querySelector(".general-obligations, .unlinked-rule-card"));
+  const hasOtherContent = Boolean(list.querySelector(".unlinked-rule-card"));
   const empty = list.querySelector("[data-realization-empty]");
   if (state.hideUnrealizedItems && !visibleCards && !hasOtherContent) {
     if (!empty) {
@@ -7070,18 +8122,6 @@ function updateRequirementListVisibility(list, selectedKeys) {
 
 function updateRequirementVisibility() {
   const selectedKeys = getRealizationPlan().selectedKeys;
-  const visibleItems = state.hideUnrealizedItems
-    ? matchingItems().filter((item) => selectedKeys.has(item.key))
-    : null;
-  const generalRules = getGeneralObligationRules(visibleItems);
-  const existingGeneralRules = elements.legalList.querySelector(":scope > .general-obligations");
-  if (generalRules.length) {
-    const updatedGeneralRules = renderGeneralObligations(generalRules);
-    if (existingGeneralRules) existingGeneralRules.replaceWith(updatedGeneralRules);
-    else elements.legalList.append(updatedGeneralRules);
-  } else {
-    existingGeneralRules?.remove();
-  }
   for (const [list, badge] of [
     [elements.legalList, elements.legalCount],
     [elements.infrastructureList, elements.infrastructureCount],
@@ -7095,44 +8135,6 @@ function updateRequirementVisibility() {
       ? `Položky: ${visibleCards} · ID k přiřazení: ${linkedRules}`
       : String(visibleCards);
   }
-}
-
-function getGeneralObligationRules(visibleItems = null) {
-  const items = visibleItems || state.items
-    .filter((item) => !state.selectedCategory || item.category === state.selectedCategory);
-  const showShelterCard = items.some((item) => item.id === "VYB_17B");
-  const rules = items
-    .flatMap((item) => item.legalRules)
-    .filter((rule) => GENERAL_OBLIGATION_RULE_IDS.has(String(rule[RULE_HEADERS.id]))
-      && !(showShelterCard && String(rule[RULE_HEADERS.id]) === "SAFE-LEG-001"));
-  return [...new Map(rules.map((rule) => [String(rule[RULE_HEADERS.id]), rule])).values()];
-}
-
-function renderGeneralObligations(rules) {
-  const section = createElement("details", "general-obligations");
-  const heading = document.createElement("summary");
-  heading.className = "general-obligations-heading";
-  heading.append(createElement("h3", "", "Obecné závazky a podmíněné právní kontroly"));
-  heading.append(createElement("span", "count-badge", rules.length));
-  heading.append(createElement("span", "section-expand-mark", "＋"));
-  section.append(heading);
-  const content = createElement("div", "general-obligations-content");
-  content.append(createElement("p", "general-obligations-note",
-    "Nejde o automaticky odvozené množství zařízení. U každého bodu ověřte, zda se vztahuje na konkrétní projekt; podmíněná povinnost není univerzálním příkazem stavět novou vybavenost."));
-  rules.forEach((rule) => {
-    const disclosure = createElement("details", "general-obligation");
-    const summary = document.createElement("summary");
-    summary.append(createElement("strong", "", displayRuleName(rule)));
-    summary.append(createElement("span", "section-expand-mark", "＋"));
-    disclosure.append(summary);
-    const obligationContent = createElement("div", "general-obligation-content");
-    obligationContent.append(renderRule(rule, "legal"));
-    if (!requiresCurrentVerification(rule)) obligationContent.append(renderManualReview(rule));
-    disclosure.append(obligationContent);
-    content.append(disclosure);
-  });
-  section.append(content);
-  return section;
 }
 
 function renderUnlinkedRuleCard(rule, kind) {
@@ -7151,6 +8153,9 @@ function renderUnlinkedRuleCard(rule, kind) {
       `Původní název v sešitu: ${cleanDisplayName(text(rule[RULE_HEADERS.equipment]))}`));
   }
   body.append(renderRule(rule, kind));
+  body.append(createFeedbackButton(
+    `Nepřiřazené pravidlo: ${displayName} [${rule[RULE_HEADERS.id]}] · seznam: ${kind}`
+  ));
   details.append(body);
   return details;
 }
@@ -7167,7 +8172,7 @@ function displayRuleName(rule) {
     "ZEL-LEG-001": "Veřejné prostranství – vyhláška č. 501/2006 Sb., § 7 odst. 2",
     "ZEL-MET-001": "Předškolní hřiště – docházková dostupnost",
     "ZEL-MET-002": "Hřiště pro mladší děti – docházková dostupnost",
-    "ZEL-MET-003": "Hřiště pro mládež a dospělé – dostupnost",
+    "ZEL-MET-003": "Hřiště pro mládež a dospělé – skutečná pěší docházka",
     "ZEL-RTS-001": "Krytá sportovní hala – cenový podklad RTS",
     "ZDR-RTS-001": "Zdravotnické budovy – orientační cenový podklad",
     "CULT-COMM-001": "Maloobchod – lokální plánovací podmínky",
@@ -7490,23 +8495,19 @@ function healthCapacitySummary(entry) {
   const demand = nonNegative(entry.demand);
   const travel = nonNegative(entry.travelMinutes);
   const limit = nonNegative(entry.limitMinutes);
-  const hasSource = Boolean(entry.source?.trim());
   const summary = [];
   if (travel !== null && limit !== null) {
     summary.push(travel <= limit
       ? `Zadaný dojezd ${formatNumber(travel)} min nepřekračuje vložený limit ${formatNumber(limit)} min.`
       : `Zadaný dojezd ${formatNumber(travel)} min překračuje vložený limit ${formatNumber(limit)} min.`);
-    if (!hasSource) summary.push("Doložte podklad do pole zdroje.");
   }
-  if (capacity !== null && demand !== null && hasSource) {
+  if (capacity !== null && demand !== null) {
     const difference = capacity - demand;
     summary.push(difference >= 0
       ? `Zadaná kapacita převyšuje zadanou potřebu o ${formatNumber(difference)} osob.`
       : `Zadaný deficit je ${formatNumber(Math.abs(difference))} osob.`);
   } else {
-    summary.push(capacity !== null && demand !== null
-      ? "Kapacitní rezervu/deficit nelze vypočítat bez doloženého zdroje."
-      : "Kapacitní rezervu/deficit nelze vypočítat bez doložené potřeby i kapacity.");
+    summary.push("Kapacitní rezerva/deficit nelze vypočítat bez potřeby i kapacity.");
   }
   return summary.join(" ");
 }
@@ -7586,6 +8587,7 @@ function renderHealthCheckEditor(item) {
 }
 
 function displayItemName(item) {
+  if (item.id === "VYB_17A") return "Služebna Policie ČR";
   if (TECHNICAL_CATALOG_NAMES[item.id]) return TECHNICAL_CATALOG_NAMES[item.id];
   if (REVIEW_ALTERNATIVE_LABELS[item.id]) return REVIEW_ALTERNATIVE_LABELS[item.id].name;
   if (item.id === "VYB_20") return "Poliklinika / Sdružené Ordinace";
@@ -7639,25 +8641,45 @@ function getItemBriefRule(item, kind, rules) {
     return "Uživatelská scénářová položka: MMR ani zákon pro ni nestanoví požadovaný počet ani povinnost stavby; výchozí volba pouze modeluje samostatnou novou halu.";
   }
   if (item.id === "VYB_17A") {
-    return "Projektová volba uživatele bez samostatného zákonného nebo metodického prahu; modelový počet je třeba ověřit podle potřebné úrovně služeb a stávající kapacity.";
+    return "Doporučení interních metodik policie (nikoli MMR ani zákonný standard): typ A/B – zásah hlídky do 10 minut; typ C – do 15 minut; typ D – požadavek se neměří. Modelový počet policistů a služeben je pouze scénářový a musí se ověřit podle stávajícího pokrytí.";
+  }
+  if (item.id === "VYB_18A") {
+    return "Počet stanovišť je kruhový síťový odhad, nikoli zákonná kvóta.";
+  }
+  if (item.id === "VYB_18B") {
+    return "Vzdálenost 150 m je scénářový předpoklad; počet hnízd ověřte s obcí a svozovou společností.";
   }
   if (item.id === "VYB_07B") {
     return "Uživatelský scénář městského odkupu bytů; nejde o zákonnou ani metodickou povinnost. Výpočet vychází z bytové skladby projektu a zadaného podílu odkupu.";
   }
   if (item.id === "VYB_09D") {
-    return "Modelová kontrola dostupnosti ZZS a potřeby základen vychází z přírůstku záměru a nastaveného dojezdového pokrytí; před návrhem nové stavby ověřte stávající síť a kapacitu.";
+    return "Zákonná dostupnost ZZS: výjezdová skupina má dosáhnout místa události nejpozději do 20 minut od převzetí pokynu k výjezdu, s výjimkami podle § 5 zákona č. 374/2011 Sb. Kontrola dojezdu sama neurčuje povinnost postavit novou základnu; ověřte krajský plán ZZS a stávající kapacitu.";
   }
   if (item.id === "VYB_16A") {
-    return "Modelová kontrola HZS porovnává přírůstek záměru s dojezdovým pokrytím a kapacitou stanice; před návrhem nové stavby ověřte skutečné zásahové pokrytí a stávající stanice.";
+    return "Ověřte skutečný zásahový dojezd hasičské stanice: v typech A/B orientačně 5–7 minut (modelová horní mez 7 minut), v typech C/D 10–15 minut (horní mez 15 minut). Rozhoduje požární poplachový plán a HZS; jde o silniční zásahový dojezd, nikoli pěší dostupnost.";
+  }
+  if (item.id === VOLUNTEER_FIRE_STATION_ID) {
+    return "Doporučený standard TAČR/MMR: skutečná pěší trasa k hasičské zbrojnici dobrovolných hasičů do 1 000 m (tabulka 1, tištěná str. 12). Pěší dostupnost neprokazuje kategorii JPO, akceschopnost ani čas zásahu; výměry budovy a cena jsou modelovány na polovinu výchozího scénáře HZS.";
   }
   if (item.id === HEATING_BOILER_ID) {
     return "Scénářová položka vložená uživatelem bez samostatného zákonného či metodického prahu; výkon a cena kotelny jsou editovatelné odhady, které je nutné ověřit energetickým posudkem a projektem.";
   }
+  if (kind === "recommended" && item.socialAvailabilityStandard) {
+    return `Doporučený standard: ${getSocialAvailabilityStandardDescription(item.socialAvailabilityStandard)} (metodika MMR ČR, tabulka 1, tištěná str. 9).`;
+  }
+  if (kind === "recommended" && ["VYB_03A", "VYB_03B", "VYB_03C"].includes(item.id)) {
+    const standardText = {
+      VYB_03A: "Typ A/B/C/D – skutečná pěší docházka do 200 m.",
+      VYB_03B: "Typ A/B/C/D – skutečná pěší docházka do 500 m.",
+      VYB_03C: "Typ A/B/C – skutečná pěší docházka do 500 m; typ D – skutečná pěší docházka do 1 000 m."
+    }[item.id];
+    return `Doporučený standard: ${standardText} Ověřuje se skutečná pěší trasa, nikoli vzdušná vzdálenost (metodika MMR ČR, tabulka Hřiště, tištěná str. 12).`;
+  }
   if (kind === "recommended" && item.id === "VYB_02C_1") {
-    return "Metodika MMR (tab. 1): v typech A/B má být SŠ dostupná veřejnou dopravou do 45 minut; sídelní přítomnost je doporučena v A/B při více než 20 000 obyvatelích. Prah se posuzuje ze současných obyvatel obce + přírůstku záměru; kapacita nové školy se odhaduje jen z přírůstku. V typech C/D se standard MMR neuplatní a položka je automaticky neaktivní.";
+    return "Doporučený standard: Typ A/B – dostupnost veřejnou dopravou do 45 minut; sídelní přítomnost je doporučena v typech A/B při více než 20 000 obyvatelích. Prah se posuzuje ze současných obyvatel řešeného území a přírůstku záměru; kapacita nové školy se odhaduje z přírůstku. (Metodika MMR ČR, tabulka 1, tištěná str. 8.)";
   }
   if (kind === "recommended" && item.id === "VYB_02C_2") {
-    return "Metodika MMR (tab. 1): ZUŠ má sídelní přítomnost v typu A a doporučeně v typech B/C při více než 5 000 obyvatelích. Prah se posuzuje ze současných obyvatel obce + přírůstku záměru; kapacita nové ZUŠ se odhaduje jen z přírůstku. V B/C do 5 000 obyvatel a v typu D se standard MMR neuplatní a položka je automaticky neaktivní.";
+    return "Doporučený standard: Typ A – sídelně-strukturální přítomnost v obci; typ B/C, obce > 5 000 obyvatel – doporučená sídelně-strukturální přítomnost v obci. Prah se posuzuje ze současných obyvatel řešeného území a přírůstku záměru; kapacita nové ZUŠ se odhaduje z přírůstku. (Metodika MMR ČR, tabulka 1, tištěná str. 8.)";
   }
   if (kind === "recommended" && SCHOOL_CAPACITY_ITEM_IDS.has(item.id)) {
     const standard = MMR_SCHOOL_STANDARDS[item.id];
@@ -7678,25 +8700,25 @@ function getItemBriefRule(item, kind, rules) {
       return `Právní dostupnost hrazené péče: dojezd nejvýše ${limitText}; nejde o povinnost zřídit ordinaci (NV č. 307/2012 Sb., příloha č. 1).`;
     }
     if (kind === "recommended" && item.recommendedRules.length) {
-      if (["VYB_09A_4", "VYB_16", "VYB_17", "VYB_18", "VYB_19"].includes(item.id)) {
-        return "Metodika MMR ČR, tab. 1, skupina 1: A/B/C přítomnost v obci nad 2 000 obyvatel a pěší dostupnost 600 m; D dojezd 35 min.";
+      if (["VYB_09A_4", "VYB_16", "VYB_17", "VYB_18", "VYB_19", "VYB_20"].includes(item.id)) {
+        return "Doporučený standard: Typ A/B/C, obce > 2 000 obyvatel – sídelně-strukturální přítomnost v obci a skutečná pěší dostupnost 600 m; typ D – dojezdová doba do 35 minut. (Metodika MMR ČR, tabulka 1, tištěná str. 9; dojezd dle NV č. 307/2012 Sb.)";
       }
       if (["VYB_09B_1", "VYB_09B_2"].includes(item.id)) {
         const group = item.id === "VYB_09B_1" ? "2" : "3";
         const neurologyNote = item.id === "VYB_09B_2"
           ? " Neurologii zařaďte až po ověření konkrétní služby."
           : "";
-        return `Metodika MMR ČR, tab. 1, skupina ${group}: sídelně-strukturální přítomnost v obci typu A a doporučeně v typu B nad 5 000 obyvatel; nejde o zákonnou povinnost.${neurologyNote}`;
+        return `Doporučený standard: Typ A – sídelně-strukturální přítomnost v obci; typ B, obce > 5 000 obyvatel – doporučená přítomnost v obci (metodika MMR ČR, tabulka 1, skupina ${group}, tištěná str. 10).${neurologyNote}`;
       }
     }
   }
 
   if (kind === "recommended" && hasStandardComparison(item)
     && !SCHOOL_CAPACITY_ITEM_IDS.has(item.id)
-    && getPrimary("REZIM_STD") !== "STANDARD") {
+    && !isCompleteStandardMode()) {
     return "Doporučený scénář zobrazuje celou zvolenou variantu, nikoli pouze přírůstek nad zákonné minimum.";
   }
-  if (kind === "recommended" && getPrimary("REZIM_STD") === "STANDARD"
+  if (kind === "recommended" && isCompleteStandardMode()
     && hasStandardComparison(item) && !SCHOOL_CAPACITY_ITEM_IDS.has(item.id)) {
     return "Ve standardním režimu je požadavek porovnán s právním minimem; započítá se pouze výsledná potřeba zvoleného standardu.";
   }
@@ -7822,6 +8844,38 @@ function renderItemMetrics(item, kind, isDelta = false) {
     if (projectMetrics) metrics.append(projectMetrics);
     metrics.append(createElement("p", "item-results-note",
       "Návrhová poptávka, kapacity, výměry a orientační investice jsou dopočtené ze zobrazených scénářových předpokladů. Ověřená okolní nabídka a skutečná dostupnost mohou potřebu snížit; scénář sám neurčuje právní povinnost ani nenahrazuje projekt a rozpočet."));
+    return metrics;
+  }
+  if (item.socialDemographic && projectEstimate?.type === "item") {
+    metrics.append(createElement("h4", "", RESULTS_HEADING));
+    const grid = createElement("div", "item-results-grid");
+    const addMetric = (label, value, unit = "") => {
+      const metric = createElement("div", "item-result-metric");
+      metric.append(createElement("span", "", label));
+      metric.append(createElement("strong", "", value === null || value === undefined
+        ? "Nelze vypočítat" : formatValue(value, unit)));
+      grid.append(metric);
+    };
+    const population = numericOrNull(derivedValues().O_prah);
+    const coefficient = numericOrNull(getItemEstimateValue(item,
+      "SOCIAL_DEMOGRAPHIC_COEFFICIENT"));
+    const unroundedCapacity = population === null || coefficient === null ? null
+      : population * coefficient;
+    addMetric("Současní + noví + spádoví obyvatelé", population, "obyvatel");
+    addMetric(`Demografický koeficient (${item.socialDemographic.unitLabel} / obyvatele)`,
+      coefficient === null ? null : formatNumber(coefficient, 6));
+    addMetric("Demografická potřeba před zaokrouhlením", unroundedCapacity,
+      item.socialDemographic.unitLabel);
+    addMetric("Návrhová kapacita", projectEstimate.quantity,
+      czechCountUnit(projectEstimate.quantity, ...item.socialDemographic.unitForms));
+    addMetric("Užitná plocha", projectEstimate.usableArea, "m²");
+    addMetric("Celková podlahová plocha", projectEstimate.totalFloorArea, "m²");
+    addMetric("Obestavěný prostor", projectEstimate.volume, "m³");
+    addMetric("Plocha pozemku", projectEstimate.siteArea, "m²");
+    addMetric("Orientační investice", projectEstimate.cost, "Kč");
+    metrics.append(grid);
+    metrics.append(createElement("p", "item-results-note",
+      `Potřeba vychází z celkového počtu obyvatel po záměru včetně spádu a z koeficientu uvedeného přímo ve výpočtu. U odhadových koeficientů nejde o právní kvótu. ${item.socialDemographic.source}`));
     return metrics;
   }
   if (projectEstimate?.type === "public-space") {
@@ -8196,6 +9250,32 @@ function renderItemCalculation(item, kind) {
     return section;
   }
   const projectEstimate = getProjectPlanningEstimate(item, kind);
+  if (item.socialDemographic) {
+    const population = numericOrNull(derivedValues().O_prah);
+    const coefficient = numericOrNull(getItemEstimateValue(item,
+      "SOCIAL_DEMOGRAPHIC_COEFFICIENT"));
+    const rawCapacity = population === null || coefficient === null
+      ? null : population * coefficient;
+    const populationParts = ["O_sidlo", "O_celk", "O_spad"]
+      .map((code) => numericOrNull(getPrimary(code)));
+    const populationFormula = populationParts.some((value) => value === null)
+      ? `O_prah = současní obyvatelé řešeného území + přírůstek záměru + obyvatelé spádu = ${formatValue(population, "obyvatel")}.`
+      : `O_prah = ${populationParts.map((value) => formatNumber(value)).join(" + ")} = ${formatNumber(population)} obyvatel.`;
+    const socialEquations = [
+      populationFormula,
+      rawCapacity === null
+        ? "Demografická potřeba = nelze vypočítat bez úplných vstupů."
+        : `Demografická potřeba = ${formatNumber(population)} obyvatel × ${formatNumber(coefficient, 6)} ${item.socialDemographic.unitLabel} / obyvatele = ${formatNumber(rawCapacity)} ${item.socialDemographic.unitLabel}.`,
+      rawCapacity === null
+        ? "Návrhová kapacita = nelze vypočítat."
+        : `Návrhová kapacita = zaokrouhlení nahoru (${formatNumber(rawCapacity)}) = ${formatNumber(projectEstimate.quantity)} ${czechCountUnit(projectEstimate.quantity, ...item.socialDemographic.unitForms)}.`
+    ];
+    content.append(renderProjectEstimateCalculation(item, kind, socialEquations));
+    content.append(createElement("p", "calculation-explanation",
+      `Prah dostupnosti používá stejný součet současných, nových a spádových obyvatel. Výměrové předpoklady jsou orientační, nikoli právní kvóta. ${item.socialDemographic.source}`));
+    section.append(content);
+    return section;
+  }
   if (projectEstimate?.type === "public-space" || item.id === "VYB_10B_1") {
     const calculation = renderProjectEstimateCalculation(item, kind);
     if (calculation) content.append(calculation);
@@ -8246,7 +9326,7 @@ function renderItemCalculation(item, kind) {
   const equations = [];
   const sources = [];
   const comparison = getStandardComparison(item);
-  const isStandardDelta = kind === "recommended" && getPrimary("REZIM_STD") !== "STANDARD"
+  const isStandardDelta = kind === "recommended" && !isCompleteStandardMode()
     && comparison.delta !== null && !SCHOOL_CAPACITY_ITEM_IDS.has(item.id);
 
   if (item.demand !== null && !isMmrWasteYard(item)
@@ -8367,13 +9447,13 @@ function renderRulesDisclosure(item, kind, rules, displayName) {
     content.append(createElement("p", "original-name-note", `Název ve zdrojovém sešitu: ${cleanSourceName}`));
   }
   const ruleBadges = createElement("div", "rule-badge-row");
-  const isCombinedStandard = kind === "recommended" && getPrimary("REZIM_STD") === "STANDARD"
+  const isCombinedStandard = kind === "recommended" && isCompleteStandardMode()
     && hasStandardComparison(item);
   const applicability = isResidentParkingLegalSource ? "Zákonný výpočet"
     : isCombinedStandard ? "Právní základ + doporučený standard"
       : kind === "legal" ? "Právní požadavek / kontrola"
-      : getPrimary("REZIM_STD") === "STANDARD" ? "Ve zvoleném standardu" : "Volitelné doporučení";
-  ruleBadges.append(createElement("span", `applicability-badge${kind === "recommended" && state.primaryValues.REZIM_STD !== "STANDARD" ? " is-optional" : ""}`, applicability));
+      : isCompleteStandardMode() ? "Ve zvoleném standardu" : "Volitelné doporučení";
+  ruleBadges.append(createElement("span", `applicability-badge${kind === "recommended" && !isCompleteStandardMode() ? " is-optional" : ""}`, applicability));
   rules.forEach((rule) => ruleBadges.append(createElement("span", "rule-id", text(rule[RULE_HEADERS.id]))));
   content.append(ruleBadges);
   if (isResidentParkingLegalSource) {
@@ -8394,7 +9474,63 @@ function renderRuleDisclosure(rule, kind) {
   return disclosure;
 }
 
+function renderSocialAvailabilityFields(standard, item, kind) {
+  const section = createElement("section", "social-availability-check");
+  section.append(createElement("strong", "", standard.thresholdText));
+  if (item.socialDemographic) {
+    const population = numericOrNull(derivedValues().O_prah);
+    const coefficient = numericOrNull(getItemEstimateValue(item,
+      "SOCIAL_DEMOGRAPHIC_COEFFICIENT"));
+    const required = getProjectPlanningEstimate(item, kind)?.quantity;
+    const verifiedCapacity = numericOrNull(getCapacityEdit(item).quantity);
+    const check = createElement("div", "social-capacity-check");
+    check.append(createElement("strong", "", "Demografická potřeba k porovnání s kapacitou okolí"));
+    check.append(createElement("p", "calculation-equation",
+      population === null || coefficient === null
+        || required === null || required === undefined
+        ? "Potřebu nelze vypočítat bez populačních vstupů a demografického koeficientu."
+        : `${formatNumber(population)} obyvatel × ${formatNumber(coefficient, 6)} ${item.socialDemographic.unitLabel} / obyvatele = ${formatNumber(required)} ${czechCountUnit(required, ...item.socialDemographic.unitForms)} k zajištění.`));
+    check.append(createElement("p", "item-results-note",
+      verifiedCapacity === null
+        ? "Doplňte níže ověřenou volnou kapacitu okolních zařízení; výpočet zatím neurčuje zůstatek."
+        : `Zadaná ověřená kapacita okolí: ${formatNumber(verifiedCapacity)} ${item.socialDemographic.unitLabel}.`));
+    section.append(check);
+  }
+  if (standard.details) {
+    section.append(createElement("p", "item-results-note", standard.details));
+  }
+  section.append(createElement("p", "social-standard-applicability",
+    getSocialServiceApplicability(standard)));
+  const saved = state.socialServiceChecks?.coverage?.[standard.key] || {};
+  const statusLabel = createElement("label", "social-service-check-field");
+  statusLabel.append(createElement("span", "", "Přítomnost služby v obci"));
+  const select = document.createElement("select");
+  select.dataset.socialServiceField = "status";
+  select.dataset.socialServiceKey = standard.key;
+  [
+    ["", "Neověřeno"],
+    ["present", "Přítomnost zjištěna"],
+    ["absent", "Přítomnost nezjištěna"]
+  ].forEach(([value, label]) => select.append(new Option(label, value)));
+  select.value = saved.status || "";
+  statusLabel.append(select);
+  const sourceLabel = createElement("label", "social-service-check-field");
+  sourceLabel.append(createElement("span", "", "Zdroj / poskytovatel (nepovinné)"));
+  const source = document.createElement("input");
+  source.type = "text";
+  source.value = saved.source || "";
+  source.dataset.socialServiceField = "source";
+  source.dataset.socialServiceKey = standard.key;
+  sourceLabel.append(source);
+  section.append(statusLabel, sourceLabel);
+  section.append(createElement("p", "calculation-source-note", standard.demographic
+    ? `Kapacita používá součet současných, nových a spádových obyvatel. Koeficient je editovatelný přímo ve výpočtu. ${standard.demographic.source} Cena je samostatný orientační odhad, nikoli norma ani rozpočet.`
+    : `Kapacita, výměry a cena jsou převzaty jako upravitelný výchozí scénář z položky „${standard.templateName || "katalogové předlohy"}“. Jde o odhad pro plánování, nikoli samostatnou normu sociální služby. Ověření sídelní dostupnosti je samostatné doporučení a samo o sobě neukládá povinnost stavět.`));
+  return section;
+}
+
 function renderItemCard(item, kind) {
+  const isSocialServiceItem = item.category === "SOCIÁLNÍ SLUŽBY A DOSTUPNÉ BYDLENÍ";
   const legalRules = item.legalRules.filter((rule) =>
     !GENERAL_OBLIGATION_RULE_IDS.has(String(rule[RULE_HEADERS.id])) || item.id === "VYB_17B");
   const rules = item.id === "VYB_05B" ? []
@@ -8404,7 +9540,7 @@ function renderItemCard(item, kind) {
   const index = categoryIndex(item.category);
   const calc = adjustedResult(item, kind);
   const isSchoolRecommendation = kind === "recommended" && SCHOOL_CAPACITY_ITEM_IDS.has(item.id);
-  const isDelta = kind === "recommended" && getPrimary("REZIM_STD") !== "STANDARD"
+  const isDelta = kind === "recommended" && !isCompleteStandardMode()
     && hasStandardComparison(item) && !isSchoolRecommendation;
   const comparison = isDelta ? getStandardComparison(item) : null;
   const projectEstimate = getProjectPlanningEstimate(item, kind);
@@ -8425,6 +9561,7 @@ function renderItemCard(item, kind) {
   const isZero = isTargetedEstimate ? isHealthcareDemandItem(item)
     ? targetedHealthcareRemaining === 0 : false
     : isSupermarketEstimate ? projectEstimate.quantity === 0
+    : item.socialDemographic ? projectEstimate?.quantity === 0
     : housingEstimate ? housingEstimate.municipalApartments === 0
     : isPolyclinicEstimate ? projectEstimate.clinicCount === 0
     : isInfrastructureEstimate ? false
@@ -8447,29 +9584,32 @@ function renderItemCard(item, kind) {
     `category-dot-control${isSelectedForRealization ? " is-selected" : ""}`);
   realizationButton.type = "button";
   realizationButton.dataset.realizationItemKey = item.key;
-  realizationButton.disabled = reserveUnavailable;
+  const selectionUnavailable = capacitySatisfied || reserveUnavailable;
+  realizationButton.disabled = selectionUnavailable;
   realizationButton.setAttribute("aria-pressed", String(isSelectedForRealization));
   realizationButton.setAttribute("aria-label",
     `${isSelectedForRealization ? "Zrušit výběr" : "Vybrat"} k realizaci: ${displayCatalogItemName(item)}`);
   realizationButton.title = isSelectedForRealization ? "Odebrat z realizace" : "Vybrat k realizaci";
-  if (reserveUnavailable) realizationButton.title = "Nejprve vyberte zákonnou nebo doporučenou variantu parkování.";
+  if (isMmrRequirementInactive(item)) {
+    realizationButton.title = getInactiveRecommendationText(item);
+  } else if (capacitySatisfied) {
+    realizationButton.title = "Kapacita okolí je označena jako dostatečná.";
+  } else if (reserveUnavailable) {
+    realizationButton.title = "Nejprve vyberte zákonnou nebo doporučenou variantu parkování.";
+  }
   realizationButton.append(createElement("span", `category-dot shape-${categoryShape(item.category)}`));
   top.append(realizationButton);
   const title = createElement("span", "requirement-title");
   const displayName = kind === "review" ? getReviewAlternativeName(item) : displayRequirementItemName(item, kind);
   title.append(createElement("strong", "", displayName));
-  if (item.userAdded || ["VYB_13A", "VYB_13B"].includes(item.id)) {
-    const userMark = createElement("small", "user-inserted-mark",
-      "Vloženo uživatelem — bez zákonného podkladu");
-    userMark.title = "Položka byla vložena uživatelem; není doložena jako zákonný podklad.";
-    title.append(userMark);
-  }
   top.append(title);
   const targetedCost = isTargetedEstimate
     ? projectEstimate.metrics.find((metric) => metric.label.includes("investice"))?.value
     : null;
-  const summaryQuantity = createElement("span", "requirement-quantity", calc.hasOverride
-    ? `${formatNumber(calc.required, 2)} ${text(getRequirementUnit(item), "")}`
+  const summaryQuantityText = item.socialDemographic
+    ? `${formatNumber(projectEstimate.quantity)} ${czechCountUnit(projectEstimate.quantity, ...item.socialDemographic.unitForms)}`
+    : calc.hasOverride
+    ? formatRequirementSummaryAmount(item, calc.required)
     : isTargetedEstimate
     ? getTargetedPlanSummaryText(item, projectEstimate)
     : isSupermarketEstimate
@@ -8483,10 +9623,10 @@ function renderItemCard(item, kind) {
     : item.manualCoverageCheck
     ? "ověřit pokrytí"
     : housingEstimate ? `${formatNumber(housingEstimate.municipalApartments)} bytů pro město`
-    : isPolyclinicEstimate ? `${formatNumber(projectEstimate.clinicCount)} ordinací · ${formatCost(projectEstimate.cost)}`
+    : isPolyclinicEstimate ? `${formatNumber(projectEstimate.clinicCount)} ordinací`
     : ["infrastructure", "infrastructure-reserve"].includes(projectEstimate?.type)
     ? `${formatNumber(projectEstimate.quantity)} ${projectEstimate.unit}`
-    : isPublicSpaceEstimate ? `${formatNumber(projectEstimate.minimumArea)} m² minima`
+    : isPublicSpaceEstimate ? `${formatNumber(projectEstimate.minimumArea)} m²`
     : isCulturalHallEstimate ? projectEstimate.quantity > 0 ? `${formatNumber(projectEstimate.quantity)} sál` : "prověřit podle populace"
     : isSchoolRecommendation ? getMmrSchoolSummaryText(item)
     : isDelta ? comparison.delta === null ? "navýšení nezadáno"
@@ -8496,7 +9636,9 @@ function renderItemCard(item, kind) {
         ? `${formatNumber(getItemEstimateQuantity(item))} ${getItemEstimateQuantity(item) === 1 ? "hala" : "haly"}`
         : "bez samostatné haly"
       : getSummaryRequirementQuantity(calc) === null ? "bez počtu"
-        : `${formatNumber(getSummaryRequirementQuantity(calc), 2)} ${text(getRequirementUnit(item), "")}`);
+        : formatRequirementSummaryAmount(item, getSummaryRequirementQuantity(calc));
+  const summaryQuantity = createElement("span", "requirement-quantity",
+    formatRequirementSummaryQuantity(item, kind, summaryQuantityText));
   const summaryMetrics = createElement("span", "requirement-summary-metrics");
   summaryMetrics.append(summaryQuantity);
   if (calc.usesDemandBasedCapacity && !isDelta) {
@@ -8504,14 +9646,17 @@ function renderItemCard(item, kind) {
     capacitySummary.hidden = !calc.isCapacityVerified;
     summaryMetrics.append(capacitySummary);
   }
-  summaryMetrics.append(createElement("small", "requirement-investment",
-    (item.manualCoverageCheck && !isTargetedEstimate)
-      || (isTargetedEstimate && (targetedCost === null || targetedCost === undefined))
-      ? "bez samostatného ocenění"
-      : isTargetedEstimate ? formatCost(targetedCost)
+  const investmentCost = (item.manualCoverageCheck && !isTargetedEstimate)
+    || (isTargetedEstimate && (targetedCost === null || targetedCost === undefined))
+    ? null
+    : isTargetedEstimate ? targetedCost
       : projectEstimate?.cost !== null && projectEstimate?.cost !== undefined
-        ? formatCost(projectEstimate.cost)
-        : formatCost(getDisplayedCost(item, calc, kind))));
+        ? projectEstimate.cost
+        : getDisplayedCost(item, calc, kind);
+  summaryMetrics.append(createElement("small", "requirement-investment",
+    investmentCost === null || investmentCost === undefined
+      ? "bez samostatného ocenění"
+      : formatCost(investmentCost)));
   top.append(summaryMetrics);
   top.append(createElement("span", "expand-mark", "＋"));
   summary.append(top);
@@ -8519,6 +9664,12 @@ function renderItemCard(item, kind) {
 
   const body = createElement("div", "requirement-body");
   body.append(createElement("p", "item-brief-rule", getItemBriefRule(item, kind, rules)));
+  if (standardInactive) {
+    body.append(createElement("p", "standard-inactive-note",
+      item.id === "VYB_17A"
+        ? "Doporučení interních metodik policie se na typ D nevztahuje; modelovaná potřeba zůstává uvedena a o zařazení do realizace rozhoduje uživatel."
+        : "Mimo práh doporučení MMR pro zvolený typ území nebo počet obyvatel. Modelovaná potřeba zůstává uvedena; o zařazení do realizace rozhoduje uživatel."));
+  }
   const parkingLegalInputs = renderResidentParkingLegalInputs(item, kind);
   body.append(isInfrastructureEstimate
     ? renderInfrastructureResults(item, kind)
@@ -8532,7 +9683,7 @@ function renderItemCard(item, kind) {
     }
   }
   body.append(renderItemCalculation(item, kind));
-  const assumptions = renderObjectAssumptionControls(item, kind);
+  const assumptions = isSocialServiceItem ? null : renderObjectAssumptionControls(item, kind);
   if (assumptions) body.append(assumptions);
   if (isInfrastructureReserveItem(item)) {
     body.append(renderInfrastructureReserveControls(item));
@@ -8540,7 +9691,7 @@ function renderItemCard(item, kind) {
   const availabilitySection = renderCapacityEditor(item, kind);
   if (parkingLegalInputs) availabilitySection.append(parkingLegalInputs);
   if (isDelta || isSchoolRecommendation
-    || (kind === "recommended" && getPrimary("REZIM_STD") === "STANDARD" && hasStandardComparison(item))) {
+    || (kind === "recommended" && isCompleteStandardMode() && hasStandardComparison(item))) {
     availabilitySection.append(renderStandardComparison(item));
   }
   if (item.quantityBasis && !isResidentParkingItem(item) && !isMmrWasteYard(item)) {
@@ -8548,6 +9699,9 @@ function renderItemCard(item, kind) {
       `Počet je převzat z „${MODEL_HEADERS.demand}“ (${formatNumber(item.demand)} ${text(getDemandUnit(item), "")}); hodnota N_navrh v modelu byla ${formatNumber(item.sourceModelQuantity)} a představovala počet zařízení/bodů, nikoli kapacitu uvedenou v jednotce položky.`));
   }
   if (healthEditor) availabilitySection.append(healthEditor);
+  if (item.socialAvailabilityStandard) {
+    availabilitySection.append(renderSocialAvailabilityFields(item.socialAvailabilityStandard, item, kind));
+  }
   if (kind === "recommended") {
     const spatialEstimate = renderSpatialEstimate(item);
     if (spatialEstimate) {
@@ -8557,14 +9711,22 @@ function renderItemCard(item, kind) {
       availabilitySection.append(spatialDisclosure);
     }
   }
+  if (item.id === "VYB_06A" && kind === "recommended") {
+    availabilitySection.append(renderSocialServiceAvailability(item));
+  }
   const alternativeNote = renderAlternativeContext(item);
   if (alternativeNote) availabilitySection.append(alternativeNote);
   body.append(availabilitySection);
-  if (rules.length || item.id === RESIDENT_PARKING_ID && kind === "legal") {
+  if (!isSocialServiceItem
+    && (rules.length || item.id === RESIDENT_PARKING_ID && kind === "legal")) {
     body.append(renderRulesDisclosure(item, kind, rules, displayName));
   }
-  const transferredWarnings = renderTransferredReviewWarnings(item, rules);
+  const transferredWarnings = isSocialServiceItem
+    ? null : renderTransferredReviewWarnings(item, rules);
   if (transferredWarnings) body.append(transferredWarnings);
+  body.append(createFeedbackButton(
+    `${item.category} / ${displayName} [${item.id}] · seznam: ${kind}`
+  ));
   details.append(body);
   return details;
 }
@@ -8648,7 +9810,7 @@ function updateStandardComparisonCard(item) {
     const kind = card.dataset.kind || (card.closest("#recommended-list") ? "recommended" : "legal");
     const isSchoolRecommendation = kind === "recommended" && SCHOOL_CAPACITY_ITEM_IDS.has(item.id);
     const schoolRecommendation = isSchoolRecommendation ? getMmrSchoolRecommendation(item) : null;
-    const isDelta = kind === "recommended" && getPrimary("REZIM_STD") !== "STANDARD"
+    const isDelta = kind === "recommended" && !isCompleteStandardMode()
       && hasStandardComparison(item) && !isSchoolRecommendation;
     const calc = adjustedResult(item, kind);
     const resultLine = card.querySelector(".standard-comparison-result");
@@ -8661,7 +9823,7 @@ function updateStandardComparisonCard(item) {
           ? `Zadejte doporučené navýšení v ${text(getStandardComparisonUnit(item), "jednotce vybavenosti")}.`
           : `Doporučené navýšení ${formatStandardComparisonAmount(item, result.uplift)}; započtená kapacita okolí ${formatStandardComparisonAmount(item, result.appliedCapacity)}; zbývá pokrýt ${formatStandardComparisonAmount(item, result.delta)}; orientační cena navýšení ${formatCost(result.cost)}.`;
     }
-    if (!isSchoolRecommendation && getPrimary("REZIM_STD") !== "STANDARD"
+    if (!isSchoolRecommendation && !isCompleteStandardMode()
       && !card.querySelector(".requirement-title small")) {
       card.querySelector(".requirement-title")?.append(createElement("small", "", "Rezerva a navýšení kapacity"));
     }
@@ -8670,7 +9832,8 @@ function updateStandardComparisonCard(item) {
     const projectEstimate = getProjectPlanningEstimate(item, kind);
     const displayedInvestment = projectEstimate?.cost ?? getDisplayedCost(item, calc, kind);
     if (isSchoolRecommendation) {
-      if (quantity) quantity.textContent = getMmrSchoolSummaryText(item);
+      if (quantity) quantity.textContent = formatRequirementSummaryQuantity(
+        item, kind, getMmrSchoolSummaryText(item));
       if (investment) investment.textContent = formatCost(displayedInvestment);
     } else if (isDelta) {
       if (quantity) quantity.textContent = result.delta === null
@@ -8810,6 +9973,199 @@ function calculateSpatialEstimate(item) {
     longSide,
     shortSide
   };
+}
+
+function renderSocialServiceAvailability(item) {
+  const section = createElement("details", "item-section social-service-availability");
+  addDisclosureSummary(section, "Orientační výměry sociálních služeb");
+  const content = createElement("div", "social-service-availability-content");
+  content.append(createElement("p", "spatial-access-guidance",
+    "Potřeby dostupnosti jsou vedené u jednotlivých sociálních služeb v seznamu vybavenosti. Níže uvedené výměry jsou pouze referenční výpočty ÚÚR, nikoli automatická kapacita zařízení."));
+
+  const areaSection = createElement("section", "uur-social-area-reference");
+  areaSection.append(createElement("h4", "", "Orientační výměry podle ÚÚR, s. C.4–71 až 72"));
+  const projectPopulation = numericOrNull(derivedValues().O_prah);
+  if (projectPopulation === null) {
+    areaSection.append(createElement("p", "spatial-access-guidance",
+      "Doplňte současné obyvatele, přírůstek záměru a obyvatele spádu pro přepočet účelových jednotek."));
+  } else {
+    areaSection.append(createElement("p", "spatial-access-guidance",
+      `Výpočet používá ${formatNumber(projectPopulation)} obyvatel (současný stav + přírůstek záměru + spád). Jde o doporučené optimum ÚÚR, nikoli právní minimum; účelové jednotky mohou vycházet zlomkově.`));
+    const table = createElement("div", "uur-social-area-table");
+    UUR_SOCIAL_AREA_REFERENCES.forEach((reference) => {
+      const units = projectPopulation * reference.unitsPerThousand / 1000;
+      const row = createElement("div", "uur-social-area-row");
+      row.append(createElement("strong", "", reference.label));
+      row.append(createElement("span", "",
+        `${formatNumber(projectPopulation)} × ${formatNumber(reference.unitsPerThousand)} / 1 000 = ${formatNumber(units)} ${reference.unitLabel}`));
+      row.append(createElement("span", "",
+        `${formatNumber(units)} × ${formatNumber(reference.floorAreaPerUnit)} m² = ${formatNumber(units * reference.floorAreaPerUnit)} m² podlažní plochy`));
+      row.append(createElement("span", "",
+        `${formatNumber(units)} × ${formatNumber(reference.siteAreaPerUnit)} m² = ${formatNumber(units * reference.siteAreaPerUnit)} m² pozemku`));
+      table.append(row);
+    });
+    const halfway = createElement("div", "uur-social-area-row");
+    halfway.append(createElement("strong", "", "Dům na půl cesty"));
+    halfway.append(createElement("span", "", "ÚÚR uvádí příklad pro 20 klientů."));
+    halfway.append(createElement("span", "", "Orientační pozemek: cca 1 500 m²."));
+    halfway.append(createElement("span", "", "Normativ podlažní plochy ani poměr na 1 000 obyvatel zde uveden není."));
+    table.append(halfway);
+    areaSection.append(table);
+  }
+  areaSection.append(createElement("p", "calculation-source-note",
+    "ÚÚR uvádí také orientační výměry pro konkrétní typové příklady, nikoli pro každý druh sociální služby. Zejména u nocleháren a krizové pomoci nelze bez dalšího zaměnit plochu ubytovny či azylového domu za normativ dané služby. Profesionální pečovatelka u denního stacionáře není totéž co klientské místo."));
+  content.append(areaSection);
+  section.append(content);
+  return section;
+}
+
+function getSocialDayServiceAccess(item) {
+  const territory = String(getPrimary("TYP_UZEMI") ?? "").match(/[A-D]/i)?.[0]?.toUpperCase();
+  const edit = state.capacityEdits[item.key] || {};
+  if (["A", "B", "C"].includes(territory)) {
+    const distance = numericOrNull(edit.accessDistance);
+    return {
+      status: distance === null
+        ? "Skutečná pěší dostupnost neověřena."
+        : distance <= 600
+          ? `Splňuje standard: ${formatNumber(distance)} m z nejvýše 600 m.`
+          : `Nesplňuje standard: ${formatNumber(distance)} m z nejvýše 600 m.`
+    };
+  }
+  if (territory === "D") {
+    const minutes = numericOrNull(edit.accessVhdMinutes);
+    return {
+      status: minutes === null
+        ? "Skutečný dojezd neověřen."
+        : minutes <= 30
+          ? `Splňuje standard: ${formatNumber(minutes)} min z nejvýše 30 min.`
+          : `Nesplňuje standard: ${formatNumber(minutes)} min z nejvýše 30 min.`
+    };
+  }
+  return { status: "Doplňte kategorii území A–D." };
+}
+
+function updateSocialServiceAvailability(event) {
+  const input = event.target.closest("[data-social-service-field][data-social-service-key]");
+  if (!input) return;
+  const key = input.dataset.socialServiceKey;
+  const field = input.dataset.socialServiceField;
+  const saved = state.socialServiceChecks?.coverage || {};
+  const current = saved[key] || { status: "", source: "" };
+  state.socialServiceChecks = {
+    ...state.socialServiceChecks,
+    coverage: {
+      ...saved,
+      [key]: { ...current, [field]: input.value }
+    }
+  };
+  saveScenario();
+}
+
+function getSocialServiceApplicability(standard) {
+  const territory = String(getPrimary("TYP_UZEMI") ?? "").match(/[A-D]/i)?.[0]?.toUpperCase();
+  const standardDescription = getSocialAvailabilityStandardDescription(standard);
+  if (!territory) {
+    return `Doporučený standard: ${standardDescription} Doplňte kategorii území A–D pro vyhodnocení použitelnosti.`;
+  }
+  if (!standard.territories.includes(territory)) {
+    return `Doporučený standard: ${standardDescription} Pro zvolený typ ${territory} se toto doporučení neuplatní.`;
+  }
+  if (standard.accessStandard) {
+    return `Doporučený standard: ${standardDescription} Ověřte dostupnost po skutečné trase.`;
+  }
+  if (standard.minimumPopulation === undefined) {
+    return `Doporučený standard: ${standardDescription}`;
+  }
+  const population = numericOrNull(derivedValues().O_prah);
+  if (population === null) {
+    return `Doporučený standard: ${standardDescription} Doplňte současné, nové a spádové obyvatele pro vyhodnocení populačního prahu.`;
+  }
+  const thresholdStatus = population > standard.minimumPopulation
+    ? "Populační práh je splněn."
+    : "Populační práh není splněn; modelovaná potřeba zůstává uvedena.";
+  return `Doporučený standard: ${standardDescription} ${thresholdStatus}`;
+}
+
+function getSocialAvailabilityStandardDescription(standard) {
+  const descriptions = {
+    "day-services": "Typ A/B/C – skutečná pěší docházka do 600 m; typ D – dojezdová doba do 30 minut.",
+    "low-threshold-day-center": "Typ A/B/C, obce > 5 000 obyvatel – sídelně-strukturální přítomnost v obci.",
+    "ambulatory-social-care": "Typ A/B/C, obce > 5 000 obyvatel – sídelně-strukturální přítomnost v obci pro nízkoprahové denní centrum, nízkoprahové zařízení pro děti a mládež, týdenní stacionář a intervenční centrum. Kontaktní centrum a sociálně aktivizační služby tabulka 1 v tomto řádku samostatně neuvádí.",
+    "night-shelter": "Typ A/B, obce > 30 000 obyvatel – sídelně-strukturální přítomnost v obci.",
+    "crisis-services": "Typ A/B, obce > 30 000 obyvatel – sídelně-strukturální přítomnost v obci.",
+    "halfway-house": "Typ A/B, obce > 50 000 obyvatel – sídelně-strukturální přítomnost v obci.",
+    "care-service-housing": "Typ A – domov pro seniory má doporučenou sídelně-strukturální přítomnost v obci. Dům s pečovatelskou službou je zahrnut v této modelové položce; tabulka 1 pro něj samostatný práh neuvádí.",
+    "disability-services": "Typ A/B, obce > 30 000 obyvatel – sídelně-strukturální přítomnost v obci."
+  };
+  return descriptions[standard.key] || standard.thresholdText;
+}
+
+function renderSpatialAccessControls(item, kind) {
+  if (kind !== "recommended" || !["VYB_03C", "VYB_06A"].includes(item.id)) return null;
+  const territory = String(getPrimary("TYP_UZEMI") ?? "").match(/[A-D]/i)?.[0]?.toUpperCase();
+  const capacity = getCapacityEdit(item);
+  const wrapper = createElement("section", "spatial-access-check");
+  const isSport = item.id === "VYB_03C";
+  if (isSport) {
+    const targetDistance = territory === "D" ? 1000 : ["A", "B", "C"].includes(territory) ? 500 : null;
+    wrapper.append(createElement("p", "spatial-access-guidance",
+      targetDistance === null
+        ? "Doplňte kategorii území A–D. Standard požaduje skutečnou pěší docházku."
+        : `Standard TAČR: skutečná pěší docházka nejvýše ${formatNumber(targetDistance)} m pro typ ${territory}.`));
+    if (targetDistance !== null) {
+      const field = createTextInput("Skutečná pěší trasa k hřišti",
+        capacity.accessDistance ?? "", { id: item.key, field: "accessDistance" }, "m");
+      const input = field.querySelector("input");
+      input.type = "number";
+      input.min = "0";
+      input.step = "1";
+      input.dataset.kind = "number";
+      wrapper.append(field);
+      const result = createElement("p", "spatial-access-result");
+      result.dataset.spatialAccessResult = "sport";
+      const distance = numericOrNull(capacity.accessDistance);
+      result.textContent = distance === null
+        ? "Skutečnou dostupnost zatím nelze vyhodnotit."
+        : distance <= targetDistance
+          ? `Splňuje standard (${formatNumber(distance)} m z ${formatNumber(targetDistance)} m).`
+          : `Nesplňuje standard (${formatNumber(distance)} m z ${formatNumber(targetDistance)} m).`;
+      wrapper.append(result);
+    }
+    return wrapper;
+  }
+
+  const distanceTerritory = ["A", "B", "C"].includes(territory);
+  const travelTerritory = territory === "D";
+  const row = createElement("div", "spatial-access-controls");
+  if (distanceTerritory) {
+    row.append(createElement("p", "spatial-access-guidance",
+      "Standard TAČR: skutečná pěší docházka nejvýše 600 m pro typy A/B/C."));
+    const field = createTextInput("Skutečná pěší trasa k centru/stacionáři",
+      capacity.accessDistance ?? "", { id: item.key, field: "accessDistance" }, "m");
+    const input = field.querySelector("input");
+    input.type = "number";
+    input.min = "0";
+    input.step = "1";
+    input.dataset.kind = "number";
+    row.append(field);
+  } else if (travelTerritory) {
+    row.append(createElement("p", "spatial-access-guidance",
+      "Standard TAČR: dojezdová doba nejvýše 30 minut pro typ D."));
+    const field = createTextInput("Skutečná dojezdová doba",
+      capacity.accessVhdMinutes ?? "", { id: item.key, field: "accessVhdMinutes" }, "min");
+    const input = field.querySelector("input");
+    input.type = "number";
+    input.min = "0";
+    input.step = "0.1";
+    input.dataset.kind = "number";
+    row.append(field);
+  } else {
+    row.append(createElement("p", "spatial-access-guidance",
+      "Doplňte kategorii území A–D pro určení pěšího nebo dojezdového standardu."));
+  }
+  wrapper.append(row);
+  return wrapper;
 }
 
 function getSpatialEstimateConfig(item) {
@@ -8988,15 +10344,6 @@ function renderCapacityEditor(item, kind) {
   const calc = adjustedResult(item, kind);
   const controls = createElement("div", "capacity-controls");
   const capacity = getCapacityEdit(item);
-  const capacitySatisfiedButton = createElement("button",
-    `capacity-satisfaction-toggle${capacity.satisfiesNearbyCapacity ? " is-confirmed" : ""}`,
-    capacity.satisfiesNearbyCapacity
-      ? "Splňuje kapacitu v okolí — potvrzeno"
-      : "Splňuje kapacitu v okolí");
-  capacitySatisfiedButton.type = "button";
-  capacitySatisfiedButton.dataset.capacitySatisfactionItemKey = item.key;
-  capacitySatisfiedButton.setAttribute("aria-pressed", String(Boolean(capacity.satisfiesNearbyCapacity)));
-  editor.append(capacitySatisfiedButton);
   const capacityUnit = getCapacityUnit(item);
   const schoolRecommendation = MMR_SCHOOL_RECOMMENDED_ITEM_IDS.has(item.id)
     && kind === "recommended";
@@ -9014,6 +10361,8 @@ function renderCapacityEditor(item, kind) {
   }
   const guidance = createElement("p", "capacity-search-guide", capacitySearchGuide(item));
   editor.append(guidance);
+  const spatialAccessControls = renderSpatialAccessControls(item, kind);
+  if (spatialAccessControls) editor.append(spatialAccessControls);
   const schoolAccessControls = schoolRecommendation ? null : renderMmrSchoolAccessControls(item, kind);
   if (schoolAccessControls) editor.append(schoolAccessControls);
   if (!schoolRecommendation) {
@@ -9035,8 +10384,8 @@ function renderCapacityEditor(item, kind) {
   overrideInput.step = "any";
   overrideInput.setAttribute("aria-label", `Uživatelsky upravený návrh pro ${displayItemName(item)}`);
   controls.append(overrideWrap);
-  controls.append(createTextInput("Autor přepisu", override.author, { id: item.key, field: "overrideAuthor" }, "Povinné pro použití přepisu"));
-  controls.append(createTextInput("Důvod / poznámka k úpravě návrhu", override.note, { id: item.key, field: "overrideNote" }, "Povinné pro použití přepisu"));
+  controls.append(createTextInput("Autor přepisu (nepovinné)", override.author, { id: item.key, field: "overrideAuthor" }, "Volitelné"));
+  controls.append(createTextInput("Důvod / poznámka k úpravě návrhu (nepovinné)", override.note, { id: item.key, field: "overrideNote" }, "Volitelné"));
   editor.append(createElement("p", "capacity-caution capacity-audit-summary",
     getUserOverrideAuditSummary(override, getCapacityUnit(item))));
   editor.append(controls);
@@ -9046,7 +10395,7 @@ function renderCapacityEditor(item, kind) {
   updateCapacityResultText(result, item, calc, kind);
   editor.append(result);
   const caution = createElement("p", "capacity-caution",
-    "Zadanou kapacitu lze použít bez vyplnění zdroje; datum se nastaví automaticky. Bez zdroje jde o uživatelský údaj bez nezávislého doložení. Ruční návrh se promítne pouze s množstvím, autorem a důvodem. Původní zákonný či metodický výpočet zůstává zachován a přepis jej nepřepisuje. U škol a veřejných prostranství se porovnává v kapacitní jednotce (žáci/děti nebo m²), nikoli v počtu budov/souborů.");
+    "Kapacitu i uživatelský návrh lze zadat bez zdroje, poznámky nebo autora; všechny doplňující údaje jsou dobrovolné. Datum se nastaví automaticky při zadání kapacity. Původní zákonný či metodický výpočet zůstává zachován jako srovnávací základ. U škol a veřejných prostranství se porovnává v kapacitní jednotce (žáci/děti nebo m²), nikoli v počtu budov/souborů.");
   editor.append(caution);
   disclosure.append(editor);
   return disclosure;
@@ -9140,15 +10489,30 @@ function availabilitySearchUrl(item) {
 
 function renderAvailabilitySearch(item) {
   const section = createElement("div", "availability-search");
+  const searchRow = createElement("div", "availability-search-row");
   const link = createElement("a", "text-button availability-search-link",
     "Hledat dostupnost vybavenosti v okolí ↗");
   link.href = availabilitySearchUrl(item);
   link.target = "_blank";
   link.rel = "noopener noreferrer";
-  section.append(link);
-  section.append(createElement("p", "item-results-note",
+  searchRow.append(link);
+  searchRow.append(createElement("p", "item-results-note availability-search-note",
     "Odkaz otevře webové vyhledávání podle názvu vybavenosti a lokality. Výsledky nejsou samy o sobě ověřením kapacity; zaznamenejte konkrétní zařízení a ověřený zdroj."));
+  section.append(searchRow);
+  const key = item.key || item.id;
+  const satisfied = state.capacityEdits[key]?.satisfiesNearbyCapacity === true;
+  section.append(renderCapacitySatisfactionButton(key, satisfied));
   return section;
+}
+
+function renderCapacitySatisfactionButton(itemKey, satisfied) {
+  const button = createElement("button",
+    `capacity-satisfaction-toggle${satisfied ? " is-confirmed" : ""}`,
+    satisfied ? "Splňuje kapacitu v okolí — potvrzeno" : "Splňuje kapacitu v okolí");
+  button.type = "button";
+  button.dataset.capacitySatisfactionItemKey = itemKey;
+  button.setAttribute("aria-pressed", String(Boolean(satisfied)));
+  return button;
 }
 
 function updateCapacityResultText(target, item, calc, kind) {
@@ -9156,7 +10520,7 @@ function updateCapacityResultText(target, item, calc, kind) {
   const line = createElement("div", "result-line");
   const projectEstimate = getProjectPlanningEstimate(item, kind);
   const isSchoolRecommendation = kind === "recommended" && SCHOOL_CAPACITY_ITEM_IDS.has(item.id);
-  const isDelta = kind === "recommended" && getPrimary("REZIM_STD") !== "STANDARD"
+  const isDelta = kind === "recommended" && !isCompleteStandardMode()
     && hasStandardComparison(item) && !isSchoolRecommendation;
   const comparison = isDelta ? getStandardComparison(item) : null;
   if (projectEstimate?.type === "targeted" && isHealthcareDemandItem(item)) {
@@ -9346,13 +10710,6 @@ function renderCurrentVerificationLinks(rule) {
     link.rel = "noopener noreferrer";
     linkList.append(link);
   });
-  if (retailQuery) {
-    const officialPlan = createElement("a", "source-link", "Oficiální portál Územního plánu města Brna ↗");
-    officialPlan.href = "https://upmb.brno.cz/";
-    officialPlan.target = "_blank";
-    officialPlan.rel = "noopener noreferrer";
-    linkList.append(officialPlan);
-  }
   section.append(linkList);
   section.append(createElement("p", "current-verification-note",
     "Odkazy spouštějí vyhledávání, nejsou potvrzením závaznosti. Rozhodující je aktuální znění předpisu a územně-plánovací dokumentace pro konkrétní záměr."));
@@ -9516,6 +10873,683 @@ function appendSourceLink(parent, rule) {
   parent.append(link);
 }
 
+function getBrnoNumber(key) {
+  const value = state.brnoInputs[key];
+  if (value === undefined || value === null || value === "") return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : null;
+}
+
+function getBrnoUseHpp(kind, use) {
+  const extra = getBrnoNumber(`${kind}-extra-area-${use.key}`) ?? 0;
+  if (use.key === "housing") {
+    const area = Math.max(0, numericOrNull(derivedValues().HPP_byty) ?? 0);
+    return {
+      area: area + extra,
+      calculatedArea: area,
+      extraArea: extra,
+      hasData: area > 0 || state.brnoInputs[`${kind}-extra-area-${use.key}`] !== undefined,
+      facilities: area > 0 ? [{ name: "Navržené bydlení", area }] : [],
+      unestimated: []
+    };
+  }
+  const itemIds = BRNO_HPP_ITEM_IDS[use.key] || [];
+  const selectedKeys = getRealizationPlan().selectedKeys;
+  let candidates = state.items.filter((item) =>
+    selectedKeys.has(item.key) && itemIds.includes(item.id)
+    && !isInfrastructureItem(item) && !REALIZATION_NON_BUILDING_IDS.has(item.id)
+    && !REALIZATION_OUTDOOR_IDS.has(item.id));
+  if (candidates.some((item) => item.id === "VYB_20")) {
+    candidates = candidates.filter((item) =>
+      !["VYB_09A_4", "VYB_09B_1", "VYB_09B_2", "VYB_16", "VYB_17", "VYB_18", "VYB_19"]
+        .includes(item.id));
+  }
+  const facilities = [];
+  const unestimated = [];
+  for (const item of candidates) {
+    if (item.id === "VYB_19" && !isHealthcareItem(item)) continue;
+    const realizationKind = getRealizationExportKind(item);
+    const estimate = getProjectPlanningEstimate(item, realizationKind);
+    const area = numericOrNull(estimate?.totalFloorArea)
+      ?? numericOrNull(estimate?.grossTotalFloorArea)
+      ?? numericOrNull(estimate?.facilityPlan?.totalFloorArea)
+      ?? numericOrNull(getRealizedFacilityMetrics(item, realizationKind).totalFloorArea);
+    if (area === null) {
+      unestimated.push(displayCatalogItemName(item));
+      continue;
+    }
+    facilities.push({ name: displayCatalogItemName(item), area: Math.max(0, area) });
+  }
+  const calculatedArea = facilities.reduce((sum, facility) => sum + facility.area, 0);
+  const extraKey = `${kind}-extra-area-${use.key}`;
+  return {
+    area: calculatedArea + extra,
+    calculatedArea,
+    extraArea: extra,
+    hasData: candidates.length > 0 || state.brnoInputs[extraKey] !== undefined,
+    facilities,
+    unestimated
+  };
+}
+
+function getBrnoParkingShare(type) {
+  const stored = getBrnoNumber(`${type}-cost-building-share`);
+  if (stored !== null) return Math.min(1, stored);
+  const parking = state.items.find((item) => item.id === RESIDENT_PARKING_ID);
+  return parking
+    ? numericOrNull(getParkingEstimateValue(parking, "legal", "PARKING_BUILDING_SHARE")) ?? 0.2
+    : 0.2;
+}
+
+function getBrnoCostEstimate(item, quantity) {
+  if (!Number.isFinite(quantity) || quantity < 0) return null;
+  const surcharge = getBrnoNumber(`${item.type}-cost-surcharge`) ?? 0.08;
+  if (item.type === "trees") {
+    const areaPerSpace = getBrnoNumber("trees-cost-area-per-space") ?? 25;
+    const ratePerArea = getBrnoNumber("trees-cost-rate-per-area") ?? 500;
+    const area = quantity * areaPerSpace;
+    const zrn = area * ratePerArea;
+    return { quantity, buildingQuantity: 0, surfaceQuantity: quantity,
+      areaPerUnit: areaPerSpace, pavedArea: area, volume: 0, zrn,
+      surcharge, cost: Math.round(zrn * (1 + surcharge)), ratePerArea };
+  }
+  const parking = state.items.find((candidate) => candidate.id === RESIDENT_PARKING_ID);
+  const parkingValue = (code, fallback) => parking
+    ? numericOrNull(getParkingEstimateValue(parking, "legal", code)) ?? fallback : fallback;
+  const buildingShare = getBrnoParkingShare(item.type);
+  const volumePerUnit = getBrnoNumber(`${item.type}-cost-volume-per-unit`)
+    ?? parkingValue("PARKING_VOLUME_PER_STALL_M3", 18);
+  const buildingRate = getBrnoNumber(`${item.type}-cost-building-rate`)
+    ?? parkingValue("PARKING_BUILDING_RATE_M3", 8995);
+  const surfaceRate = getBrnoNumber(`${item.type}-cost-surface-rate`)
+    ?? parkingValue("PARKING_SURFACE_RATE_M3", 7500);
+  const surfaceAreaPerUnit = getBrnoNumber(`${item.type}-cost-surface-area-per-unit`)
+    ?? parkingValue("PARKING_SURFACE_AREA_PER_STALL_M2", 25);
+  const buildingQuantity = quantity * buildingShare;
+  const surfaceQuantity = quantity - buildingQuantity;
+  const buildingVolume = buildingQuantity * volumePerUnit;
+  const surfaceVolume = surfaceQuantity * volumePerUnit;
+  const pavedArea = surfaceQuantity * surfaceAreaPerUnit;
+  const zrn = buildingVolume * buildingRate + surfaceVolume * surfaceRate;
+  return {
+    quantity, buildingShare, buildingQuantity, surfaceQuantity, volumePerUnit,
+    buildingVolume, surfaceVolume, buildingRate, surfaceRate,
+    surfaceAreaPerUnit, pavedArea, zrn, surcharge,
+    cost: Math.round(zrn * (1 + surcharge))
+  };
+}
+
+function getBrnoProposedQuantity(item, calculatedQuantity) {
+  const override = numericOrNull(state.overrides[item.key]?.quantity);
+  return override !== null && override >= 0 ? override : calculatedQuantity;
+}
+
+function getBrnoCarEstimate() {
+  const zone = state.brnoInputs["cars-zone"];
+  const zoneRates = {
+    "00": { otherMinimum: 0, housingMinimum: 0, otherMaximum: 15 },
+    "01": { otherMinimum: 15, housingMinimum: 50, otherMaximum: null },
+    "02": { otherMinimum: 35, housingMinimum: 75, otherMaximum: null },
+    "03": { otherMinimum: 75, housingMinimum: 100, otherMaximum: null }
+  }[zone];
+  if (!zoneRates) return null;
+  let housingBase = 0;
+  let otherBoundBase = 0;
+  let visitorBase = 0;
+  let hasEnteredArea = false;
+  const calculations = [];
+  for (const use of BRNO_CAR_USE_RATES) {
+    const hpp = getBrnoUseHpp("cars", use);
+    if (hpp.unestimated.length) {
+      return { incomplete: `Nelze určit HPP realizace: ${hpp.unestimated.join(", ")}.` };
+    }
+    hasEnteredArea ||= hpp.hasData;
+    const area = hpp.area;
+    if (area === 0) continue;
+    const rate = use.rate ?? getBrnoNumber(`cars-rate-${use.key}`);
+    if (!rate || (use.key === "production" && (rate < 200 || rate > 800))) {
+      return { incomplete: "U výroby zadejte ukazatel HPP na stání v intervalu 200–800 m²." };
+    }
+    let baseCount = area / rate;
+    if (use.dwellings) {
+      const dwellingCount = numericOrNull(derivedValues().BJ_pocet) ?? 0;
+      baseCount = Math.min(baseCount, dwellingCount * 2);
+      housingBase += baseCount;
+    } else {
+      otherBoundBase += baseCount * use.bound / 100;
+      visitorBase += baseCount * use.visitor / 100;
+    }
+    calculations.push({ use, hpp: area, rate, baseCount, bound: baseCount * use.bound / 100,
+      visitor: baseCount * use.visitor / 100, facilities: hpp.facilities,
+      extraArea: hpp.extraArea });
+  }
+  if (!hasEnteredArea) return null;
+  const housingMinimum = Math.ceil(housingBase * zoneRates.housingMinimum / 100);
+  const otherBoundMinimum = Math.ceil(otherBoundBase * zoneRates.otherMinimum / 100);
+  const visitorMinimum = Math.floor(visitorBase * zoneRates.otherMinimum / 100 + 0.5);
+  const otherBoundMaximum = zoneRates.otherMaximum === null
+    ? null : Math.ceil(otherBoundBase * zoneRates.otherMaximum / 100);
+  const visitorMaximum = zoneRates.otherMaximum === null
+    ? null : Math.floor(visitorBase * zoneRates.otherMaximum / 100 + 0.5);
+  const estimate = {
+    zone,
+    housingMinimum,
+    otherBoundMinimum,
+    visitorMinimum,
+    minimum: housingMinimum + otherBoundMinimum + visitorMinimum,
+    otherBoundMaximum,
+    visitorMaximum,
+    maxSubset: otherBoundMaximum === null ? null : otherBoundMaximum + visitorMaximum,
+    calculations,
+    housingUnits: numericOrNull(derivedValues().BJ_pocet) ?? 0
+  };
+  const carItem = BRNO_REQUIREMENTS.find((item) => item.type === "cars");
+  estimate.proposedQuantity = getBrnoProposedQuantity(carItem, estimate.minimum);
+  estimate.cost = getBrnoCostEstimate(carItem, estimate.proposedQuantity);
+  estimate.surfaceStalls = estimate.cost?.surfaceQuantity ?? 0;
+  return estimate;
+}
+
+function getBrnoBikeEstimate() {
+  let boundBase = 0;
+  let visitorBase = 0;
+  let housingBoundBase = 0;
+  let housingVisitorBase = 0;
+  let hasEnteredArea = false;
+  const calculations = [];
+  for (const use of BRNO_BIKE_USE_RATES) {
+    const hpp = getBrnoUseHpp("bikes", use);
+    if (hpp.unestimated.length) {
+      return { incomplete: `Nelze určit HPP realizace: ${hpp.unestimated.join(", ")}.` };
+    }
+    hasEnteredArea ||= hpp.hasData;
+    const area = hpp.area;
+    if (area === 0) continue;
+    const baseCount = area / use.rate;
+    boundBase += baseCount * use.bound / 100;
+    visitorBase += baseCount * use.visitor / 100;
+    if (use.key === "housing") {
+      housingBoundBase += baseCount * use.bound / 100;
+      housingVisitorBase += baseCount * use.visitor / 100;
+    }
+    calculations.push({ use, hpp: area, rate: use.rate, baseCount,
+      bound: baseCount * use.bound / 100, visitor: baseCount * use.visitor / 100,
+      facilities: hpp.facilities, extraArea: hpp.extraArea });
+  }
+  const dwellingCondition = state.brnoInputs["bikes-dwelling-condition"] === "true";
+  if (!hasEnteredArea && !dwellingCondition) return null;
+  let bound = Math.ceil(boundBase);
+  const visitor = Math.floor(visitorBase + 0.5);
+  let dwellingIncrement = 0;
+  let dwellingMinimum = null;
+  if (dwellingCondition) {
+    dwellingMinimum = numericOrNull(derivedValues().BJ_pocet) ?? 0;
+    dwellingMinimum *= 2;
+    const housingBaseTotal = Math.ceil(housingBoundBase)
+      + Math.floor(housingVisitorBase + 0.5);
+    dwellingIncrement = Math.max(0, dwellingMinimum - housingBaseTotal);
+    bound += dwellingIncrement;
+  }
+  const total = bound + visitor;
+  const estimate = {
+    bound,
+    visitor,
+    total,
+    oversized: total >= 50 ? Math.floor(total * 0.02 + 0.5) : 0,
+    dwellingMinimum,
+    dwellingIncrement,
+    calculations,
+    housingUnits: numericOrNull(derivedValues().BJ_pocet) ?? 0
+  };
+  const bikeItem = BRNO_REQUIREMENTS.find((item) => item.type === "bikes");
+  estimate.proposedQuantity = getBrnoProposedQuantity(bikeItem, estimate.total);
+  estimate.cost = getBrnoCostEstimate(bikeItem, estimate.proposedQuantity);
+  return estimate;
+}
+
+function getBrnoRequirementEstimate(item) {
+  if (item.type === "cars") return getBrnoCarEstimate();
+  if (item.type === "bikes") return getBrnoBikeEstimate();
+  if (item.type === "trees") {
+    const enteredSurfaceStalls = numericOrNull(state.brnoInputs["trees-surface-stalls"]);
+    if (enteredSurfaceStalls !== null) {
+      const estimate = { stalls: enteredSurfaceStalls, spaces: Math.ceil(enteredSurfaceStalls / 8),
+        manuallyEntered: true };
+      estimate.cost = getBrnoCostEstimate(item, estimate.spaces);
+      return estimate;
+    }
+    const parking = getBrnoCarEstimate();
+    if (!parking) return null;
+    if (parking.incomplete) return { incomplete: `Nejprve doplňte výpočet automobilových stání: ${parking.incomplete}` };
+    const stalls = parking.surfaceStalls;
+    const estimate = { stalls, spaces: Math.ceil(stalls / 8) };
+    estimate.cost = getBrnoCostEstimate(item, estimate.spaces);
+    return estimate;
+  }
+  return null;
+}
+
+function createBrnoNumberInput(label, key, unit, step = "any") {
+  const wrapper = createElement("label", "bsp-project-input");
+  wrapper.append(createElement("span", "", `${label}${unit ? ` (${unit})` : ""}`));
+  const input = document.createElement("input");
+  input.type = "number";
+  input.min = "0";
+  input.step = step;
+  input.value = state.brnoInputs[key] ?? "";
+  input.dataset.bspField = key;
+  wrapper.append(input);
+  return wrapper;
+}
+
+function createBrnoUseInputs(kind, uses) {
+  const details = createElement("details", "bsp-use-details");
+  details.append(createElement("summary", "",
+    `HPP podle účelu užívání (${uses.length} ukazatelů)`));
+  const rows = createElement("div", "bsp-use-inputs");
+  for (const use of uses) {
+    const row = createElement("div",
+      `bsp-use-input-row${use.rate === null ? " bsp-use-input-row-variable" : ""}`);
+    row.dataset.bspUseKey = use.key;
+    row.dataset.bspUseKind = kind;
+    const description = createElement("span", "");
+    description.append(document.createTextNode(use.label));
+    description.append(createElement("small", "",
+      `${use.rate ?? "200–800"} m² HPP/stání · vázaná ${use.bound}% · návštěvnická ${use.visitor}%`));
+    const hpp = getBrnoUseHpp(kind, use);
+    const hppValue = createElement("strong", "bsp-use-hpp-value",
+      `${formatNumber(hpp.calculatedArea)} m² HPP z realizací${hpp.extraArea
+        ? ` + ${formatNumber(hpp.extraArea)} m² doplněno` : ""}`);
+    row.append(description, hppValue);
+    if (use.rate === null) {
+      const rateInput = createBrnoNumberInput("Ukazatel HPP na 1 stání",
+        `${kind}-rate-${use.key}`, "m²", "1");
+      const rateControl = rateInput.querySelector("input");
+      rateControl.min = "200";
+      rateControl.max = "800";
+      row.append(rateInput);
+    }
+    row.append(createBrnoNumberInput("Doplnit HPP mimo vybrané realizace",
+      `${kind}-extra-area-${use.key}`, "m²"));
+    rows.append(row);
+  }
+  details.append(rows);
+  return details;
+}
+
+function createBrnoPercentInput(label, key, value) {
+  const field = createBrnoNumberInput(label, key, "%", "1");
+  const input = field.querySelector("input");
+  input.min = "0";
+  input.max = "100";
+  input.value = formatNumber(value * 100);
+  input.dataset.bspFraction = "true";
+  return field;
+}
+
+function getBrnoParkingCostDefaults(type) {
+  const parking = state.items.find((item) => item.id === RESIDENT_PARKING_ID);
+  const readParking = (code, fallback) => parking
+    ? numericOrNull(getParkingEstimateValue(parking, "legal", code)) ?? fallback : fallback;
+  return {
+    buildingShare: getBrnoParkingShare(type),
+    volumePerUnit: readParking("PARKING_VOLUME_PER_STALL_M3", 18),
+    buildingRate: readParking("PARKING_BUILDING_RATE_M3", 8995),
+    surfaceRate: readParking("PARKING_SURFACE_RATE_M3", 7500),
+    surfaceAreaPerUnit: readParking("PARKING_SURFACE_AREA_PER_STALL_M2", 25),
+    surcharge: 0.08
+  };
+}
+
+function createBrnoCostControls(item) {
+  const details = createElement("details", "bsp-cost-details");
+  details.append(createElement("summary", "", "Orientační výměry a cena — upravitelné předpoklady"));
+  const content = createElement("div", "bsp-cost-inputs");
+  if (item.type === "trees") {
+    content.append(
+      createBrnoNumberInput("Plocha prostoru pro růst jednoho stromu", "trees-cost-area-per-space", "m²", "1"),
+      createBrnoNumberInput("Modelová úprava plochy", "trees-cost-rate-per-area", "Kč/m²", "100"),
+      createBrnoPercentInput("VRN a rezerva", "trees-cost-surcharge",
+        getBrnoNumber("trees-cost-surcharge") ?? 0.08)
+    );
+    content.append(createElement("p", "item-results-note",
+      "Cena je editovatelný scénářový odhad zelené plochy mimo BSP; výchozí sazba 500 Kč/m² není cenovou sazbou předpisu."));
+  } else {
+    const defaults = getBrnoParkingCostDefaults(item.type);
+    content.append(
+      createBrnoPercentInput("Podíl kapacity v parkovacím domě / krytém objektu",
+        `${item.type}-cost-building-share`, defaults.buildingShare),
+      createBrnoNumberInput("Obestavěný prostor na jednotku", `${item.type}-cost-volume-per-unit`, "m³/jednotku", "1"),
+      createBrnoNumberInput("Modelová sazba objektu", `${item.type}-cost-building-rate`, "Kč/m³ OP", "100"),
+      createBrnoNumberInput("Modelová sazba venkovní plochy", `${item.type}-cost-surface-rate`, "Kč/m³ ekv.", "100"),
+      createBrnoNumberInput("Zpevněná plocha na venkovní jednotku",
+        `${item.type}-cost-surface-area-per-unit`, "m²/jednotku", "1"),
+      createBrnoPercentInput("VRN a rezerva", `${item.type}-cost-surcharge`, defaults.surcharge)
+    );
+    content.append(createElement("p", "item-results-note",
+      "Cena odděluje krytou kapacitu a venkovní zpevněnou plochu stejně jako model rezidentského parkování. Všechny sazby a výměry jsou editovatelné scénářové odhady mimo BSP; objemový ekvivalent venkovní plochy není položkovou cenou RTS."));
+  }
+  details.append(content);
+  return details;
+}
+
+function renderBrnoRequirementResult(card, item) {
+  const estimate = getBrnoRequirementEstimate(item);
+  const summary = card.querySelector("[data-bsp-summary]");
+  const result = card.querySelector("[data-bsp-result]");
+  result.replaceChildren();
+  result.append(createElement("h4", "", RESULTS_HEADING));
+  const grid = createElement("div", "item-results-grid");
+  result.append(grid);
+  const addLine = (label, value) => {
+    const metric = createElement("div", "item-result-metric");
+    metric.append(createElement("span", "", label), createElement("strong", "", value));
+    grid.append(metric);
+  };
+  const investment = card.querySelector("[data-bsp-investment]");
+  if (investment) investment.textContent = estimate?.cost
+    ? formatCost(estimate.cost.cost) : "";
+  const addHppBreakdown = () => {
+    if (!estimate.calculations?.length) return;
+    const heading = createElement("h4", "", "HPP a kapacita podle účelu");
+    result.append(heading);
+    const table = createElement("div", "bsp-calculation-rows");
+    estimate.calculations.forEach(({ use, hpp, rate, baseCount, bound, visitor, facilities, extraArea }) => {
+      const row = createElement("div", "bsp-calculation-row");
+      const detail = [
+        `${formatNumber(hpp)} m² HPP ÷ ${formatNumber(rate)} m²/stání = ${formatNumber(baseCount, 2)} základních stání`,
+        `vázaná část ${formatNumber(bound, 2)} · návštěvnická ${formatNumber(visitor, 2)}`
+      ];
+      const sources = facilities.map((facility) =>
+        `${facility.name}: ${formatNumber(facility.area)} m²`).join("; ");
+      if (sources) detail.push(sources);
+      if (extraArea) detail.push(`ručně doplněno mimo výběr: ${formatNumber(extraArea)} m²`);
+      row.append(createElement("strong", "", use.label),
+        createElement("span", "", detail.join(" · ")));
+      table.append(row);
+    });
+    result.append(table);
+  };
+  if (!estimate) {
+    summary.textContent = "Čeká na výpočtové vstupy";
+    result.append(createElement("p", "",
+      item.type === "trees"
+        ? "Zadejte počet venkovních automobilových stání přímo, nebo vyberte zónu a doplňte HPP pro automatický výpočet."
+        : "Po výběru realizovaných položek se jejich vypočtená HPP automaticky přiřadí k účelům užívání."));
+    return;
+  }
+  if (estimate.incomplete) {
+    summary.textContent = "Výpočet neúplný";
+    result.append(createElement("p", "", estimate.incomplete));
+    return;
+  }
+  if (item.type === "cars") {
+    summary.textContent = `${formatValue(estimate.minimum, "stání")} minimum${estimate.proposedQuantity !== estimate.minimum
+      ? ` · návrh ${formatValue(estimate.proposedQuantity, "stání")}` : ""} · ${formatCost(estimate.cost?.cost)}`;
+    addLine("Minimální počet stání", formatValue(estimate.minimum, "stání"));
+    addLine("Vázaná stání bydlení", formatValue(estimate.housingMinimum, "stání"));
+    addLine("Vázaná stání ostatní", formatValue(estimate.otherBoundMinimum, "stání"));
+    addLine("Návštěvnická stání", formatValue(estimate.visitorMinimum, "stání"));
+    result.append(createElement("p", "",
+      estimate.maxSubset === null
+        ? "Příloha č. 3 pro tuto zónu maximum nestanoví."
+        : `Zóna A — dílčí maxima: ostatní vázaná ${formatValue(estimate.otherBoundMaximum, "stání")}, návštěvnická ${formatValue(estimate.visitorMaximum, "stání")} (součet ${formatValue(estimate.maxSubset, "stání")}). Předpis nestanoví maximum vázaných stání pro bydlení.`));
+    addHppBreakdown();
+  } else if (item.type === "bikes") {
+    summary.textContent = `${formatValue(estimate.total, "míst")} celkem${estimate.proposedQuantity !== estimate.total
+      ? ` · návrh ${formatValue(estimate.proposedQuantity, "míst")}` : ""} · ${formatCost(estimate.cost?.cost)}`;
+    addLine("Vázaná místa", formatValue(estimate.bound, "míst"));
+    addLine("Návštěvnická místa", formatValue(estimate.visitor, "míst"));
+    if (estimate.dwellingMinimum !== null) {
+      addLine("Minimum 2 místa na byt",
+        `${formatValue(estimate.dwellingMinimum, "míst")} (navýšení ${formatValue(estimate.dwellingIncrement, "míst")})`);
+    }
+    if (estimate.oversized) {
+      addLine("Nadrozměrná místa (započtená do celku)",
+        formatValue(estimate.oversized, "míst"));
+    }
+    addHppBreakdown();
+  } else if (item.type === "trees") {
+    summary.textContent = `${formatValue(estimate.spaces, "stromových prostorů")} · ${formatCost(estimate.cost?.cost)}`;
+    addLine("Venkovní parkovací stání", formatValue(estimate.stalls, "stání"));
+    addLine("Prostory pro růst stromů",
+      `${formatNumber(estimate.stalls)} ÷ 8${estimate.manuallyEntered ? " (ručně zadaná venkovní stání)" : " (převzato z výpočtu automobilových stání)"}, zaokrouhleno nahoru = ${formatValue(estimate.spaces, "prostorů")}`);
+  }
+  if (estimate.cost) {
+    const cost = estimate.cost;
+    if (item.type === "trees") {
+      addLine("Orientační plocha zeleně", formatValue(cost.pavedArea, "m²"));
+      addLine("Cena", `${formatCost(cost.zrn)} ZRN + ${formatNumber(cost.surcharge * 100)} % VRN = ${formatCost(cost.cost)}`);
+    } else {
+      if (cost.quantity !== (item.type === "cars" ? estimate.minimum : estimate.total)) {
+        addLine("Kapacita použitá pro cenový odhad",
+          formatValue(cost.quantity, item.type === "cars" ? "stání" : "míst"));
+      }
+      addLine("Parkovací dům / krytá kapacita",
+        `${formatValue(cost.buildingQuantity, "jednotek")} · ${formatValue(cost.buildingVolume, "m³")}`);
+      addLine("Venkovní zpevněná plocha",
+        `${formatValue(cost.surfaceQuantity, "jednotek")} · ${formatValue(cost.pavedArea, "m²")}`);
+      addLine("Orientační investice",
+        `${formatCost(cost.zrn)} ZRN + ${formatNumber(cost.surcharge * 100)} % VRN = ${formatCost(cost.cost)}`);
+    }
+  }
+  result.append(createElement("p", "item-results-note",
+    "HPP se přebírá z propočtů právě realizovaných položek; dodatečnou HPP lze zadat pouze pro objekty mimo katalog. Cena je pracovní odhad, nikoli sazba BSP."));
+}
+
+function createBrnoRequirementCard(item) {
+  const parkingCategory = "DOPRAVA, PARKOVÁNÍ A BEZPEČNOST";
+  const card = createElement("details",
+    `requirement-card bsp-calculation-card category-${categoryIndex(parkingCategory) % CATEGORY_COLORS.length} shape-${categoryShape(parkingCategory)}`);
+  const selected = Number(state.realizationSelections[item.key]) === 1;
+  card.dataset.bspItem = item.key;
+  card.dataset.itemKey = item.key;
+  card.classList.toggle("is-realization-selected", selected);
+  card.classList.toggle("is-capacity-satisfied",
+    state.capacityEdits[item.key]?.satisfiesNearbyCapacity === true);
+  const summary = createElement("summary", "");
+  const top = createElement("div", "requirement-card-top");
+  const select = createElement("button",
+    `category-dot-control${selected ? " is-selected" : ""}`);
+  select.type = "button";
+  select.dataset.realizationItemKey = item.key;
+  select.setAttribute("aria-pressed", String(selected));
+  select.setAttribute("aria-label", `${selected ? "Odebrat výběr" : "Vybrat"}: ${item.label}`);
+  select.append(createElement("span", `category-dot shape-${categoryShape("BRNĚNSKÁ VYHLÁŠKA")}`, ""));
+  const title = createElement("span", "requirement-title");
+  title.append(createElement("strong", "", item.label));
+  const metrics = createElement("span", "requirement-summary-metrics");
+  const estimateSummary = createElement("span", "requirement-quantity", "");
+  estimateSummary.dataset.bspSummary = "";
+  metrics.append(estimateSummary);
+  const investment = createElement("small", "requirement-investment", "");
+  investment.dataset.bspInvestment = "";
+  metrics.append(investment);
+  top.append(select, title, metrics, createElement("span", "expand-mark", "＋"));
+  summary.append(top);
+  card.append(summary);
+  const body = createElement("div", "requirement-body");
+  body.append(createElement("p", "item-brief-rule", item.description));
+  const result = createElement("section", "item-results bsp-result");
+  result.dataset.bspResult = "";
+  body.append(result);
+
+  const calculation = createElement("details", "item-section calculation-section");
+  addDisclosureSummary(calculation, "Výpočet / jak jsme k výsledku došli");
+  const calculationContent = createElement("div", "calculation-content");
+  const inputs = createElement("details", "bsp-calculation-inputs project-estimate-controls");
+  addDisclosureSummary(inputs, "Upravit vstupní předpoklady a ocenění");
+  const fields = createElement("div", "bsp-project-fields");
+  if (item.type === "cars") {
+    const zone = createElement("label", "bsp-project-input");
+    zone.append(createElement("span", "", "Zóna podle mapy přílohy č. 3"));
+    const selectZone = document.createElement("select");
+    selectZone.dataset.bspField = "cars-zone";
+    const blankOption = document.createElement("option");
+    blankOption.value = "";
+    blankOption.textContent = "Vyberte zónu";
+    selectZone.append(blankOption);
+    for (const value of ["00", "01", "02", "03"]) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = `Zóna ${String.fromCharCode(65 + Number(value))}`;
+      selectZone.append(option);
+    }
+    selectZone.value = state.brnoInputs["cars-zone"] ?? "";
+    zone.append(selectZone);
+    fields.append(zone, createElement("p", "item-results-note",
+      `Počet bytů ${formatNumber(derivedValues().BJ_pocet ?? 0)} a HPP bydlení přebírá aplikace z odvozených ukazatelů projektu.`));
+    inputs.append(fields, createBrnoUseInputs("cars", BRNO_CAR_USE_RATES));
+    inputs.append(createElement("p", "calculation-source-note",
+      "Výpočet používá účely a podíly podle přílohy č. 2 a zónová minima přílohy č. 3 (§ 25). Zónu ověřte podle polohy a mapy předpisu; územní plán může stanovit jiný podíl. Specifické účely, vyhrazená stání a přechodná ustanovení vyžadují samostatnou kontrolu."));
+  } else if (item.type === "bikes") {
+    inputs.append(createBrnoUseInputs("bikes", BRNO_BIKE_USE_RATES));
+    const conditions = createElement("label", "realization-filter");
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.dataset.bspField = "bikes-dwelling-condition";
+    checkbox.checked = state.brnoInputs["bikes-dwelling-condition"] === "true";
+    conditions.append(checkbox, document.createTextNode(
+      "Potvrzuji podmínky přílohy č. 4 odst. 7 pro minimum 2 místa na byt"));
+    inputs.append(fields, conditions);
+    inputs.append(createElement("p", "item-results-note",
+      `Ověřovaný počet bytů ${formatNumber(derivedValues().BJ_pocet ?? 0)} se přebírá z odvozených ukazatelů projektu.`));
+    inputs.append(createElement("p", "calculation-source-note",
+      "Výpočet používá HPP účelů a podíly vázaných/návštěvnických míst podle § 27 a přílohy č. 4. Předpokládá novou stavbu; u změn dokončených staveb ověřte zvláštní pravidla. Vázaná místa mají být zastřešena; běžné místo má nejméně 0,45 × 2 m, nadrozměrné 2,75 × 0,85 m."));
+  } else if (item.type === "trees") {
+    fields.append(createBrnoNumberInput("Počet venkovních automobilových stání (volitelný přímý vstup)",
+      "trees-surface-stalls", "stání", "1"));
+    inputs.append(fields);
+    inputs.append(createElement("p", "calculation-source-note",
+      "Počet lze zadat přímo, nebo se převezme z výpočtu automobilových stání po odečtení podílu kapacity v parkovacím domě. Požadavek upravuje § 26 odst. 7; umístění stromů mimo parkoviště ověřte v projektu."));
+  }
+  calculationContent.append(inputs);
+  calculation.append(calculationContent);
+  body.append(calculation, createBrnoCostControls(item), renderBrnoAvailability(item));
+  body.append(createFeedbackButton(`Brněnská vyhláška / ${item.label} [${item.key}]`));
+  card.append(body);
+  renderBrnoRequirementResult(card, item);
+  return card;
+}
+
+function renderBrnoAvailability(item) {
+  const section = createElement("details", "item-section capacity-section bsp-capacity-check");
+  addDisclosureSummary(section, "Ověřený stav v okolí a uživatelský návrh");
+  section.append(renderAvailabilitySearch({ ...item, name: item.label }));
+  const editor = createElement("div", "capacity-editor");
+  editor.append(createElement("p", "capacity-search-guide",
+    "Ověřte existující kapacitu a dostupnost; označení dostatečné kapacity slouží jako uživatelská kontrola a nemění samo o sobě výpočet zákonného minima."));
+  const saved = state.capacityEdits[item.key] || {};
+  const controls = createElement("div", "capacity-controls");
+  const quantity = createTextInput("Celková ověřená kapacita v okolí (stání / místa)",
+    saved.quantity, { id: item.key, field: "quantity", kind: "number" }, "Prázdné = neověřeno");
+  const quantityInput = quantity.querySelector("input");
+  quantityInput.type = "number";
+  quantityInput.min = "0";
+  quantityInput.step = "1";
+  controls.append(quantity);
+  controls.append(createTextInput("Zdroj / ověření (nepovinné)", saved.source,
+    { id: item.key, field: "source" }, "Např. GIS, parkovací dům nebo správce"));
+  controls.append(createTextInput("Datum (doplní se automaticky)", saved.date,
+    { id: item.key, field: "date" }));
+  controls.append(createTextInput("Poznámka k ověření (nepovinné)", saved.note,
+    { id: item.key, field: "note" }, "Rozsah a omezení"));
+  const override = state.overrides[item.key] || {};
+  const proposal = createTextInput("Uživatelsky upravený návrh (nepovinné)",
+    override.quantity, { id: item.key, field: "override", kind: "number" }, "Ponechat výsledek výpočtu");
+  const proposalInput = proposal.querySelector("input");
+  proposalInput.type = "number";
+  proposalInput.min = "0";
+  proposalInput.step = "1";
+  controls.append(proposal);
+  controls.append(createTextInput("Poznámka k úpravě návrhu (nepovinné)", override.note,
+    { id: item.key, field: "overrideNote" }, "Volitelné"));
+  editor.append(controls);
+  const result = createElement("div", "capacity-result");
+  result.dataset.brnoCapacityResult = item.key;
+  result.textContent = getBrnoCapacityResultText(item, saved, override);
+  editor.append(result);
+  section.append(editor);
+  return section;
+}
+
+function getBrnoCapacityResultText(item, capacity, override) {
+  const knownCapacity = numericOrNull(capacity.quantity);
+  const proposedQuantity = numericOrNull(override.quantity);
+  const observed = knownCapacity === null
+    ? "Ověřená kapacita okolí není zadána."
+    : `Zaznamenaná ověřená kapacita okolí: ${formatValue(knownCapacity, item.type === "bikes" ? "míst" : "stání")}.`;
+  const proposal = proposedQuantity === null
+    ? "Výpočetní minimum zůstává beze změny."
+    : `Uživatelský návrh ${formatValue(proposedQuantity, item.type === "bikes" ? "míst" : "stání")} se použije pro orientační cenu; zákonné minimum se tím nepřepisuje.`;
+  return `${observed} ${proposal}`;
+}
+
+function renderBrnoRequirementList() {
+  if (!state.items.length) return;
+  const selectedKeys = getRealizationPlan().selectedKeys;
+  const items = state.hideUnrealizedItems
+    ? BRNO_REQUIREMENTS.filter((item) => selectedKeys.has(item.key))
+    : BRNO_REQUIREMENTS;
+  elements.brnoCount.textContent = String(items.length);
+  elements.brnoList.replaceChildren();
+  if (!items.length) {
+    const empty = createElement("div", "empty-list",
+      "V tomto seznamu nejsou vybrané položky brněnských předpisů.");
+    empty.dataset.realizationEmpty = "";
+    elements.brnoList.append(empty);
+  } else {
+    items.forEach((item) => elements.brnoList.append(createBrnoRequirementCard(item)));
+  }
+  const controls = [...elements.brnoList.querySelectorAll("button[data-realization-item-key]")]
+    .filter((control) => !control.disabled);
+  const selected = controls.length > 0
+    && controls.every((control) => control.getAttribute("aria-pressed") === "true");
+  for (const button of elements.requirementColumns.querySelectorAll(
+    'button[data-realization-section-toggle="brno"]'
+  )) {
+    button.setAttribute("aria-pressed", String(selected));
+    button.classList.toggle("is-selected", selected);
+  }
+}
+
+function updateBrnoRequirementInputs(event) {
+  const field = event.target.closest("[data-bsp-field]");
+  if (!field) return;
+  const key = field.dataset.bspField;
+  const parsedValue = field.type === "checkbox" ? String(field.checked)
+    : field.type === "number" && field.value !== "" ? Number(field.value)
+      : field.value;
+  if (typeof parsedValue === "number"
+    && (!Number.isFinite(parsedValue) || parsedValue < Number(field.min || 0)
+      || field.max !== "" && parsedValue > Number(field.max))) {
+    field.setCustomValidity("Hodnota je mimo povolený rozsah.");
+    if (event.type === "change") field.reportValidity();
+    return;
+  }
+  field.setCustomValidity?.("");
+  state.brnoInputs[key] = field.dataset.bspFraction === "true"
+    && typeof parsedValue === "number" ? parsedValue / 100 : parsedValue;
+  saveScenario();
+  for (const item of BRNO_REQUIREMENTS) {
+    const card = [...elements.brnoList.querySelectorAll("[data-bsp-item]")]
+      .find((candidate) => candidate.dataset.bspItem === item.key);
+    if (!card) continue;
+    renderBrnoRequirementResult(card, item);
+    const hppRows = card.querySelectorAll(".bsp-use-input-row");
+    for (const row of hppRows) {
+      const use = [...BRNO_CAR_USE_RATES, ...BRNO_BIKE_USE_RATES]
+        .find((candidate) => candidate.key === row.dataset.bspUseKey);
+      if (!use) continue;
+      const hpp = getBrnoUseHpp(row.dataset.bspUseKind, use);
+      const output = row.querySelector(".bsp-use-hpp-value");
+      if (output) output.textContent = `${formatNumber(hpp.calculatedArea)} m² HPP z realizací${hpp.extraArea
+        ? ` + ${formatNumber(hpp.extraArea)} m² doplněno` : ""}`;
+    }
+  }
+  updateScenarioStatus();
+}
+
 function renderRequirements() {
   const matching = matchingItems();
   const selectedKeys = getRealizationPlan().selectedKeys;
@@ -9535,12 +11569,14 @@ function renderRequirements() {
   renderRequirementList(elements.reviewList, "review", matching);
   renderRequirementList(elements.reserveList, "reserve", matching);
   renderRequirementList(elements.infrastructureList, "infrastructure", matching);
+  renderBrnoRequirementList();
   for (const [name, list] of [
     ["legal", elements.legalList],
     ["infrastructure", elements.infrastructureList],
     ["recommended", elements.recommendedList],
     ["review", elements.reviewList],
-    ["reserve", elements.reserveList]
+    ["reserve", elements.reserveList],
+    ["brno", elements.brnoList]
   ]) {
     const collapsed = Boolean(state.collapsedLists[name]);
     list.hidden = collapsed;
@@ -9549,6 +11585,21 @@ function renderRequirements() {
     button.setAttribute("aria-expanded", String(!collapsed));
     const sectionName = button.closest(".requirement-column").querySelector("h3").textContent;
     button.setAttribute("aria-label", `${collapsed ? "Rozbalit" : "Sbalit"} ${sectionName}`);
+  }
+  for (const button of elements.requirementColumns.querySelectorAll(
+    "button[data-realization-section-toggle]"
+  )) {
+    const column = button.closest(".requirement-column");
+    const controls = [...column.querySelectorAll(
+      ".requirement-list button[data-realization-item-key]"
+    )].filter((control) => !control.disabled);
+    const selected = controls.length > 0
+      && controls.every((control) => control.getAttribute("aria-pressed") === "true");
+    button.setAttribute("aria-pressed", String(selected));
+    button.classList.toggle("is-selected", selected);
+    const sectionName = column.querySelector("h3").textContent;
+    button.setAttribute("aria-label",
+      `${selected ? "Odebrat výběr" : "Vybrat všechny položky"}: ${sectionName}`);
   }
 }
 
@@ -9649,10 +11700,8 @@ function collectFeedbackNotes() {
 
 function formatFeedbackReport(errors, changes) {
   const notes = collectFeedbackNotes();
-  const selectedItem = state.items.find((item) => item.key === state.selectedItemKey);
-  const location = selectedItem
-    ? `${selectedItem.category} / ${displayItemName(selectedItem)} [${selectedItem.id}]`
-    : state.selectedCategory || "Všechny skupiny vybavenosti";
+  const location = document.querySelector("#feedback-location").value.trim()
+    || getCurrentFeedbackLocation() || "Všechny skupiny vybavenosti";
   const sections = [
     "ZPĚTNÁ VAZBA K APLIKACI",
     `Vytvořeno: ${new Date().toLocaleString("cs-CZ")}`,
@@ -9673,6 +11722,231 @@ function formatFeedbackReport(errors, changes) {
   return `\uFEFF${sections.join("\r\n")}\r\n`;
 }
 
+function getCurrentFeedbackLocation() {
+  const selectedItem = state.items.find((item) => item.key === state.selectedItemKey);
+  if (selectedItem) {
+    return `${selectedItem.category} / ${displayItemName(selectedItem)} [${selectedItem.id}]`;
+  }
+  return state.selectedCategory ? `Tematická skupina: ${state.selectedCategory}` : "";
+}
+
+function createFeedbackButton(location) {
+  const button = createElement("button", "text-button item-feedback-button",
+    "Nahlásit chybu u této položky");
+  button.type = "button";
+  button.dataset.feedbackContext = location;
+  return button;
+}
+
+let feedbackReportObjectUrl = "";
+
+function clearPreparedFeedbackReport() {
+  if (feedbackReportObjectUrl) URL.revokeObjectURL(feedbackReportObjectUrl);
+  feedbackReportObjectUrl = "";
+  const downloadLink = document.querySelector("#feedback-download-link");
+  downloadLink.hidden = true;
+  downloadLink.removeAttribute("href");
+  downloadLink.removeAttribute("download");
+  const emailLink = document.querySelector("#feedback-email-link");
+  emailLink.hidden = true;
+  emailLink.removeAttribute("href");
+}
+
+function openFeedbackReport(location = getCurrentFeedbackLocation()) {
+  const report = document.querySelector("#feedback-report");
+  report.open = true;
+  document.querySelector("#feedback-location").value = location;
+  document.querySelector("#feedback-status").textContent = "";
+  clearPreparedFeedbackReport();
+  report.scrollIntoView({ behavior: "auto", block: "start" });
+  document.querySelector("#feedback-errors").focus({ preventScroll: true });
+}
+
+const USER_GUIDE_STEPS = [
+  {
+    title: "Načtěte pracovní sešit",
+    target: "#dropzone",
+    text: "Tady načtete soubor Excel (.xlsx, .xls nebo .xlsm), který obsahuje katalog vybavenosti, pravidla a výchozí vstupy. Lze jej také přetáhnout na oblast Importu. Po načtení zkontrolujte název sešitu a případná upozornění; pokud jsou data už načtená, pokračujte.",
+    note: "Začněte výběrem pracovního sešitu, který odpovídá vašemu projektu."
+  },
+  {
+    title: "Vyplňte parametry projektu",
+    target: ".project-input-group-pinned",
+    text: "V horní části postupně vyplňte známé údaje o území, obyvatelích, bytech, podlažnosti a HPP. Jednotky a popisy jsou uvedené u jednotlivých polí. Změna vstupu přepočítá navázané potřeby a výsledky; prázdné volitelné pole nechte prázdné, pokud hodnotu neznáte.",
+    note: "Zvýrazněná oblast obsahuje hlavní vstupy projektu."
+  },
+  {
+    title: "Zkontrolujte odvozené ukazatele",
+    target: ".derived-details > summary",
+    text: "Rozbalte tuto část pro automaticky odvozené hodnoty a případné volitelné přepisy. Ruční přepis použijte jen tehdy, když máte lepší podklad; přepočítané ukazatele se promítnou do položek, které na ně navazují.",
+    note: "Zkontrolujte, zda odvozené hodnoty odpovídají vašim předpokladům."
+  },
+  {
+    title: "Najděte potřebnou vybavenost",
+    target: "#search-input",
+    text: "Hledejte podle názvu, kódu nebo zdroje. Tematické skupiny pod vyhledáváním lze rozbalit a sbalit. Kliknutím na skupinu nebo konkrétní vybavenost omezíte pravý výstup; opětovným kliknutím filtr zrušíte.",
+    note: "Vyhledávání a seznam tematických skupin jsou vlevo."
+  },
+  {
+    title: "Vyberte položky k realizaci",
+    target: "#category-list",
+    text: "Zaškrtněte políčko u každé položky, kterou chcete zahrnout do záměru. Výběr označuje váš projektový scénář, nikoli automaticky právní povinnost. Infrastrukturu, rezervy a návazné vybavenosti zkontrolujte a vyberte zvlášť. Přepínač „Skrýt nerealizované“ později omezí pravý seznam na vybrané položky.",
+    note: "Výběr lze kdykoli změnit; položky nejsou předvybrané za vás."
+  },
+  {
+    title: "Projděte výstup a standardy",
+    target: ".requirement-column-heading",
+    text: "Vpravo jsou výsledky rozdělené do zákonných/povinných položek, doporučení MMR, nadstandardu, rezerv, infrastruktury a Brněnské vyhlášky. Porovnejte, co je povinnost, doporučení nebo pouze modelový scénář. Souhrn karty ukazuje potřebné množství a případnou orientační cenu.",
+    note: "Výstup interpretujte podle konkrétního typu pravidla i podmínek území."
+  },
+  {
+    title: "Upravte výpočet položky",
+    target: ".requirement-card .calculation-section > summary",
+    text: "Otevřete „Výpočet / jak jsme k výsledku došli“. Upravitelné vstupy, koeficienty a předpoklady měňte podle doložených údajů; výsledek, výměry i cena se podle nich přepočítají. U Brněnské vyhlášky jsou vstupy parkování a část „Orientační výměry a cena“ přímo v příslušné kartě. Zdroje a jednotky vždy zkontrolujte.",
+    note: "Průvodce otevřel ukázkovou kartu a její výpočet; změny můžete rovnou vyzkoušet."
+  },
+  {
+    title: "Ověřte kapacitu v okolí",
+    target: ".requirement-card .capacity-section > summary",
+    text: "V části ověření lze hledat okolní zařízení, zaznamenat doloženou volnou kapacitu a připsat zdroj, datum nebo vlastní návrh. Výsledky hledání ověřte samostatně. Prázdné pole znamená neověřeno a samotné nalezení zařízení nepotvrzuje jeho dostupnou kapacitu.",
+    note: "Doplňte pouze údaje, které jste schopni ověřit."
+  },
+  {
+    title: "Exportujte seznam realizací",
+    target: "#realized-export",
+    text: "Po výběru a kontrole položek použijte „Export realizací (Excel)“. Export obsahuje přehled vybraných položek a jejich vypočtené hodnoty. Před exportem zkontrolujte, že jsou zahrnuté potřebné infrastruktury a varianty a že nejsou omylem skryté nebo vynechané.",
+    note: "Toto tlačítko exportuje seznam vybraných realizací."
+  },
+  {
+    title: "Uložte přenositelný projekt",
+    target: "#excel-export",
+    text: "„Export Excel“ uloží přenositelný projektový sešit včetně úprav a scénáře. Uložte si jej jako pracovní kopii; při příštím použití jej znovu načtěte. „Obnovit hodnoty ze sešitu“ vrátí výchozí hodnoty a smaže místní úpravy scénáře.",
+    note: "Export realizací je užší přehled; tento export uchovává projekt a jeho úpravy."
+  },
+  {
+    title: "Nahlaste chybu nebo návrh",
+    target: "#open-feedback-report",
+    text: "Tlačítko v horní liště otevře obecný formulář. U každé položky je také její vlastní tlačítko „Nahlásit chybu u této položky“, které předvyplní místo. Popište očekávaný výsledek, co se stalo a kroky k zopakování. Připravte a stáhněte report .txt, potom otevřete e-mail, přiložte soubor a zprávu sami odešlete.",
+    note: "Aplikace report ani e-mail nikam neodesílá automaticky."
+  }
+];
+
+let userGuideStepIndex = 0;
+let userGuideHighlight = null;
+let userGuideDisclosureState = new Map();
+
+function showUserGuideStep(index) {
+  userGuideHighlight?.classList.remove("guide-highlight");
+  userGuideHighlight = null;
+  userGuideStepIndex = Math.max(0, Math.min(index, USER_GUIDE_STEPS.length - 1));
+  const step = USER_GUIDE_STEPS[userGuideStepIndex];
+  const guide = document.querySelector("#user-guide-tour");
+  document.querySelector("#guide-step-title").textContent = step.title;
+  document.querySelector("#guide-step-text").textContent = step.text;
+  document.querySelector("#guide-target-note").textContent = step.note;
+  document.querySelector("#guide-step-count").textContent =
+    `Krok ${userGuideStepIndex + 1} z ${USER_GUIDE_STEPS.length}`;
+  document.querySelector("#guide-progress-bar").style.width =
+    `${((userGuideStepIndex + 1) / USER_GUIDE_STEPS.length) * 100}%`;
+  document.querySelector("#guide-back").disabled = userGuideStepIndex === 0;
+  document.querySelector("#guide-next").textContent =
+    userGuideStepIndex === USER_GUIDE_STEPS.length - 1 ? "Dokončit" : "Další";
+
+  const target = [...document.querySelectorAll(step.target)]
+    .find((candidate) => candidate.getClientRects().length
+      || candidate.closest(".requirement-card")?.getClientRects().length);
+  if (target) {
+    for (let ancestor = target; ancestor; ancestor = ancestor.parentElement) {
+      if (ancestor instanceof HTMLDetailsElement && !ancestor.open) {
+        const key = getUserGuideDisclosureKey(ancestor);
+        if (!userGuideDisclosureState.has(key)) userGuideDisclosureState.set(key, ancestor.open);
+        ancestor.open = true;
+      }
+    }
+    userGuideHighlight = target;
+    target.classList.add("guide-highlight");
+    target.scrollIntoView({ behavior: "auto", block: "center", inline: "nearest" });
+  }
+  positionUserGuideWindow(target);
+  guide.querySelector(".guide-window").focus({ preventScroll: true });
+}
+
+function getUserGuideDisclosureKey(details) {
+  if (details.id) return `id:${details.id}`;
+  if (details.dataset.inputGroup) return `input-group:${details.dataset.inputGroup}`;
+  const card = details.closest(".requirement-card");
+  if (card) {
+    if (details === card) return `card:${card.dataset.kind}:${card.dataset.itemKey}:root`;
+    const index = [...card.querySelectorAll("details")].indexOf(details);
+    return `card:${card.dataset.kind}:${card.dataset.itemKey}:section:${index}`;
+  }
+  return `details:${[...details.classList].sort().join(".")}`;
+}
+
+function positionUserGuideWindow(target) {
+  const windowElement = document.querySelector(".guide-window");
+  if (!target) {
+    windowElement.dataset.placement = "bottom-right";
+    return;
+  }
+  const targetRect = target.getBoundingClientRect();
+  const windowRect = windowElement.getBoundingClientRect();
+  const gap = 16;
+  const placements = [
+    { name: "top-left", left: gap, top: gap },
+    { name: "top-right", left: window.innerWidth - windowRect.width - gap, top: gap },
+    { name: "bottom-left", left: gap, top: window.innerHeight - windowRect.height - gap },
+    { name: "bottom-right", left: window.innerWidth - windowRect.width - gap, top: window.innerHeight - windowRect.height - gap }
+  ];
+  const best = placements.reduce((currentBest, placement) => {
+    const overlapWidth = Math.max(0,
+      Math.min(placement.left + windowRect.width, targetRect.right)
+      - Math.max(placement.left, targetRect.left));
+    const overlapHeight = Math.max(0,
+      Math.min(placement.top + windowRect.height, targetRect.bottom)
+      - Math.max(placement.top, targetRect.top));
+    const overlapArea = overlapWidth * overlapHeight;
+    return overlapArea < currentBest.overlapArea
+      ? { ...placement, overlapArea } : currentBest;
+  }, { name: "bottom-right", overlapArea: Infinity });
+  windowElement.dataset.placement = best.name;
+}
+
+function startUserGuide() {
+  userGuideDisclosureState = new Map();
+  document.querySelector("#user-guide-tour").hidden = false;
+  showUserGuideStep(0);
+}
+
+function finishUserGuide() {
+  userGuideHighlight?.classList.remove("guide-highlight");
+  userGuideHighlight = null;
+  for (const disclosure of document.querySelectorAll("details")) {
+    const key = getUserGuideDisclosureKey(disclosure);
+    if (userGuideDisclosureState.has(key)) {
+      disclosure.open = userGuideDisclosureState.get(key);
+    }
+  }
+  userGuideDisclosureState.clear();
+  document.querySelector("#user-guide-tour").hidden = true;
+  document.querySelector("#open-user-guide").focus({ preventScroll: true });
+}
+
+function handleUserGuideKeydown(event) {
+  if (document.querySelector("#user-guide-tour").hidden) return;
+  if (event.key === "Escape") {
+    event.preventDefault();
+    finishUserGuide();
+  } else if (event.key === "ArrowRight") {
+    event.preventDefault();
+    if (userGuideStepIndex === USER_GUIDE_STEPS.length - 1) finishUserGuide();
+    else showUserGuideStep(userGuideStepIndex + 1);
+  } else if (event.key === "ArrowLeft" && userGuideStepIndex > 0) {
+    event.preventDefault();
+    showUserGuideStep(userGuideStepIndex - 1);
+  }
+}
+
 function exportFeedbackReport(event) {
   event.preventDefault();
   const errors = document.querySelector("#feedback-errors").value;
@@ -9684,6 +11958,8 @@ function exportFeedbackReport(event) {
   }
 
   const report = formatFeedbackReport(errors, changes);
+  clearPreparedFeedbackReport();
+  const downloadLink = document.querySelector("#feedback-download-link");
   const timestamp = new Date();
   const datePart = [
     timestamp.getFullYear(),
@@ -9694,34 +11970,27 @@ function exportFeedbackReport(event) {
     String(timestamp.getHours()).padStart(2, "0"),
     String(timestamp.getMinutes()).padStart(2, "0")
   ].join("-");
-  let objectUrl;
   try {
     const file = new Blob([report], { type: "text/plain;charset=utf-8" });
-    const downloadLink = document.createElement("a");
-    objectUrl = URL.createObjectURL(file);
-    downloadLink.href = objectUrl;
+    feedbackReportObjectUrl = URL.createObjectURL(file);
+    downloadLink.href = feedbackReportObjectUrl;
     downloadLink.download = `zpetna-vazba-${datePart}_${timePart}.txt`;
-    downloadLink.click();
-    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    downloadLink.hidden = false;
   } catch (error) {
     document.querySelector("#feedback-status").textContent =
-      `Soubor .txt se nepodařilo vytvořit nebo stáhnout: ${error instanceof Error ? error.message : String(error)}`;
-    if (objectUrl) URL.revokeObjectURL(objectUrl);
+      `Soubor .txt se nepodařilo připravit ke stažení: ${error instanceof Error ? error.message : String(error)}`;
+    clearPreparedFeedbackReport();
     return;
   }
-  const status = document.querySelector("#feedback-status");
-  status.textContent = "Soubor .txt byl stažen. V otevřeném e-mailu jej přiložte a zprávu odešlete.";
+  const emailLink = document.querySelector("#feedback-email-link");
   const subject = encodeURIComponent("Zpětná vazba k aplikaci Vybavenost území");
   const body = encodeURIComponent(
     "Dobrý den,\n\nv příloze posílám export zpětné vazby k aplikaci.\n\n"
     + "Soubor .txt je potřeba přiložit ručně."
   );
-  try {
-    window.location.href = `mailto:xavavrusa@vutbr.cz?subject=${subject}&body=${body}`;
-  } catch (error) {
-    status.textContent =
-      `Soubor .txt byl stažen, ale e-mailový klient se nepodařilo otevřít: ${error instanceof Error ? error.message : String(error)}`;
-  }
+  emailLink.href = `mailto:xavavrusa@vutbr.cz?subject=${subject}&body=${body}`;
+  document.querySelector("#feedback-status").textContent =
+    "Report je připraven. Klikněte na „Stáhnout report .txt“; poté se zpřístupní připravený e-mail.";
 }
 
 function clearNotice() {
@@ -9733,6 +12002,49 @@ function clearNotice() {
 function updateCapacityEdit(event) {
   const input = event.target.closest("[data-record-id][data-capacity-field]");
   if (!input) return;
+  const viewport = captureRequirementViewport(input);
+  if (input.dataset.recordId === SPECIAL_BUILDING_PARKING_REALIZATION_KEY) {
+    updateSpecialParkingCapacityEdit(event, input, viewport);
+    return;
+  }
+  const brnoItem = BRNO_REQUIREMENTS.find((item) => item.key === input.dataset.recordId);
+  if (brnoItem) {
+    const field = input.dataset.capacityField;
+    const numericFields = ["quantity", "override"];
+    const numericValue = numericOrNull(input.value);
+    if (numericFields.includes(field)
+      && input.value !== "" && (numericValue === null || numericValue < 0)) {
+      input.setCustomValidity("Zadejte nezápornou číselnou hodnotu nebo pole ponechte prázdné.");
+      if (event.type === "change") input.reportValidity();
+      return;
+    }
+    input.setCustomValidity("");
+    if (field === "quantity") {
+      const current = state.capacityEdits[brnoItem.key] || {};
+      const date = input.value !== "" && !current.date ? getLocalIsoDate() : current.date;
+      state.capacityEdits[brnoItem.key] = { ...current, quantity: input.value, date };
+      const dateInput = input.closest(".capacity-editor")?.querySelector('[data-capacity-field="date"]');
+      if (dateInput instanceof HTMLInputElement && date) dateInput.value = date;
+    } else {
+      const current = state.overrides[brnoItem.key] || { quantity: "", note: "", author: "", history: [] };
+      state.overrides[brnoItem.key] = {
+        ...current,
+        [field === "override" ? "quantity" : "note"]:
+          field === "override" && input.value !== "" ? Number(input.value) : input.value
+      };
+    }
+    saveScenario();
+    const card = input.closest("[data-bsp-item]");
+    if (card) {
+      const capacity = state.capacityEdits[brnoItem.key] || {};
+      const override = state.overrides[brnoItem.key] || {};
+      const result = card.querySelector("[data-brno-capacity-result]");
+      if (result) result.textContent = getBrnoCapacityResultText(brnoItem, capacity, override);
+      renderBrnoRequirementResult(card, brnoItem);
+    }
+    updateScenarioStatus();
+    return;
+  }
   const item = state.items.find((candidate) => candidate.key === input.dataset.recordId);
   if (!item) return;
   const id = item.key;
@@ -9789,6 +12101,7 @@ function updateCapacityEdit(event) {
     const disclosureState = captureRequirementDisclosureState();
     renderRequirements();
     restoreRequirementDisclosureState(disclosureState);
+    restoreRequirementViewport(viewport, false);
     updateScenarioStatus();
     return;
   }
@@ -9801,7 +12114,7 @@ function updateCapacityEdit(event) {
       auditSummary.textContent = getUserOverrideAuditSummary(state.overrides[id], getCapacityUnit(item));
     }
     const isDelta = card.dataset.kind === "recommended"
-      && getPrimary("REZIM_STD") !== "STANDARD" && hasStandardComparison(item)
+      && !isCompleteStandardMode() && hasStandardComparison(item)
       && !SCHOOL_CAPACITY_ITEM_IDS.has(item.id);
     const isSchoolRecommendation = card.dataset.kind === "recommended"
       && SCHOOL_CAPACITY_ITEM_IDS.has(item.id);
@@ -9820,6 +12133,21 @@ function updateCapacityEdit(event) {
     if (title) title.textContent = displayRequirementItemName(item, card.dataset.kind);
     const result = card.querySelector(".capacity-result");
     if (result) updateCapacityResultText(result, item, calc, card.dataset.kind);
+    if (item.id === "VYB_06A") {
+      const dayStatus = card.querySelector("[data-social-day-service-status]");
+      if (dayStatus) dayStatus.textContent = getSocialDayServiceAccess(item).status;
+    } else if (item.id === "VYB_03C") {
+      const accessResult = card.querySelector('[data-spatial-access-result="sport"]');
+      const targetDistance = calculateSpatialEstimate(item)?.distanceMeters;
+      const actualDistance = numericOrNull(state.capacityEdits[id]?.accessDistance);
+      if (accessResult) {
+        accessResult.textContent = actualDistance === null || !Number.isFinite(targetDistance)
+          ? "Skutečnou dostupnost zatím nelze vyhodnotit."
+          : actualDistance <= targetDistance
+            ? `Splňuje standard (${formatNumber(actualDistance)} m z ${formatNumber(targetDistance)} m).`
+            : `Nesplňuje standard (${formatNumber(actualDistance)} m z ${formatNumber(targetDistance)} m).`;
+      }
+    }
     const calculation = card.querySelector(".calculation-section");
     if (calculation) {
       const replacement = renderItemCalculation(item, card.dataset.kind);
@@ -9832,13 +12160,15 @@ function updateCapacityEdit(event) {
     if (isHealthcareDemandItem(item)) {
       const quantity = card.querySelector(".requirement-quantity");
       const projectEstimate = getTargetedPlanEstimate(item, card.dataset.kind === "recommended");
-      if (quantity) quantity.textContent = getTargetedPlanSummaryText(item, projectEstimate);
+      if (quantity) quantity.textContent = formatRequirementSummaryQuantity(
+        item, card.dataset.kind, getTargetedPlanSummaryText(item, projectEstimate));
       const investment = card.querySelector(".requirement-investment");
       if (investment) investment.textContent = formatCost(projectEstimate?.cost ?? null);
     }
     if (isSchoolRecommendation) {
       const quantity = card.querySelector(".requirement-quantity");
-      if (quantity) quantity.textContent = getMmrSchoolSummaryText(item);
+      if (quantity) quantity.textContent = formatRequirementSummaryQuantity(
+        item, card.dataset.kind, getMmrSchoolSummaryText(item));
     } else if (!isHealthcareDemandItem(item)) {
       updateRequirementCardSummary(card, item, calc);
     }
@@ -9879,6 +12209,70 @@ function updateCapacityEdit(event) {
     }
   }
   updateScenarioStatus();
+  restoreRequirementViewport(viewport);
+}
+
+function updateSpecialParkingCapacityEdit(event, input, viewport) {
+  const id = SPECIAL_BUILDING_PARKING_REALIZATION_KEY;
+  const field = input.dataset.capacityField;
+  if (["quantity", "override"].includes(field)) {
+    const value = numericOrNull(input.value);
+    if (input.value !== "" && (input.validity.badInput || value === null || value < 0)) {
+      input.setCustomValidity("Zadejte nezápornou číselnou hodnotu nebo pole ponechte prázdné.");
+      if (event.type === "change") input.reportValidity();
+      return;
+    }
+    input.setCustomValidity("");
+  }
+  if (field === "quantity") {
+    const existing = state.capacityEdits[id] || {};
+    const date = input.value !== "" && !existing.date ? getLocalIsoDate() : existing.date;
+    state.capacityEdits[id] = { ...existing, quantity: input.value, date };
+    if (date) {
+      const dateInput = input.closest(".capacity-controls")?.querySelector('[data-capacity-field="date"]');
+      if (dateInput instanceof HTMLInputElement) dateInput.value = date;
+    }
+  } else if (["source", "date", "note"].includes(field)) {
+    const existing = state.capacityEdits[id] || {};
+    state.capacityEdits[id] = { ...existing, [field]: input.value };
+  } else {
+    const existing = state.overrides[id] || { quantity: "", note: "", author: "", history: [] };
+    const overrideField = field === "override" ? "quantity"
+      : field === "overrideNote" ? "note" : "author";
+    const value = field === "override" && input.value !== ""
+      ? Number(input.value) : input.value;
+    state.overrides[id] = { ...existing, [overrideField]: value };
+    if (field === "override" && event.type === "change"
+      && hasActiveUserOverride(state.overrides[id])) {
+      const updated = state.overrides[id];
+      const baseline = Number.isFinite(updated.baselineQuantity)
+        ? updated.baselineQuantity : getSpecialBuildingParkingEstimate().estimatedStalls;
+      const history = Array.isArray(updated.history) ? updated.history : [];
+      const previousQuantity = history.length
+        ? history[history.length - 1].quantity : baseline;
+      history.push({
+        previousQuantity,
+        quantity: updated.quantity,
+        author: updated.author?.trim() || "Neuvedeno",
+        reason: updated.note?.trim() || "Neuveden",
+        changedAt: new Date().toISOString()
+      });
+      state.overrides[id] = {
+        ...updated,
+        baselineQuantity: baseline,
+        history,
+        updatedAt: history[history.length - 1].changedAt
+      };
+    }
+  }
+  saveScenario();
+  if (event.type !== "change") return;
+  const disclosureState = captureRequirementDisclosureState();
+  renderCategories();
+  renderRequirements();
+  restoreRequirementDisclosureState(disclosureState);
+  restoreRequirementViewport(viewport);
+  updateScenarioStatus();
 }
 
 function getLocalIsoDate() {
@@ -9890,18 +12284,16 @@ function getLocalIsoDate() {
 }
 
 function sortRequirementCards(parent) {
-  const cards = [...parent.querySelectorAll(":scope > .requirement-card")];
-  const sortCards = (list) => list.sort((left, right) =>
-    Number(left.classList.contains("is-zero")) - Number(right.classList.contains("is-zero")));
-  sortCards(cards);
+  const sortCards = (container) => {
+    const cards = [...container.querySelectorAll(":scope > .requirement-card")];
+    cards.sort((left, right) =>
+      Number(left.classList.contains("is-zero")) - Number(right.classList.contains("is-zero")));
+    container.append(...cards);
+  };
+  parent.querySelectorAll(":scope > .requirement-topic-group").forEach(sortCards);
   parent.querySelectorAll(".reserve-capacity-group").forEach((group) => {
-    const groupedCards = [...group.querySelectorAll(":scope > .requirement-card")];
-    sortCards(groupedCards);
-    group.append(...groupedCards);
+    sortCards(group);
   });
-  if (!cards.length) return;
-  const unlinked = [...parent.querySelectorAll(":scope > .unlinked-rule-card")];
-  parent.append(...cards, ...unlinked);
 }
 
 function updateHealthcareCheck(event) {
@@ -10019,6 +12411,9 @@ function createProjectExportSheet(scenario) {
   state.items.forEach((item) => rows.push([
     displayCatalogItemName(item), item.id, item.category, selectedKeys.has(item.key) ? "Ano" : "Ne"
   ]));
+  BRNO_REQUIREMENTS.forEach((item) => rows.push([
+    item.label, item.key, "Brněnská vyhláška", selectedKeys.has(item.key) ? "Ano" : "Ne"
+  ]));
   rows.push([], ["OVĚŘENÁ KAPACITA A UŽIVATELSKÝ NÁVRH"],
     ["Vybavenost", "ID", "Ověřená kapacita", "Zdroj", "Datum", "Poznámka k ověření", "Návrhová hodnota", "Autor přepisu", "Důvod přepisu", "Výchozí hodnota modelu", "Čas poslední změny", "Historie přepisů (JSON)", "Splňuje kapacitu v okolí"]);
   state.items.forEach((item) => {
@@ -10109,7 +12504,8 @@ function getRealizationExportKind(item, kindOverrides = new Map()) {
   if (item.userAdded || REVIEW_ALTERNATIVE_IDS.has(item.id)) return "review";
   const availableKinds = ["legal", "recommended", "review"]
     .filter((kind) => getRequirementItems([item], kind).length);
-  if (getPrimary("REZIM_STD") === "STANDARD" && availableKinds.includes("recommended")) {
+  if (isHighestStandardMode() && availableKinds.includes("review")) return "review";
+  if (isCompleteStandardMode() && availableKinds.includes("recommended")) {
     return "recommended";
   }
   if (availableKinds.includes("legal")) return "legal";
@@ -10118,10 +12514,16 @@ function getRealizationExportKind(item, kindOverrides = new Map()) {
 
 function getRealizationExportSelectionKeys() {
   const keys = new Set(getRealizationPlan().selectedKeys);
-  const validKeys = new Set(state.items.map((item) => item.key));
+  const validKeys = new Set([
+    ...state.items.filter((item) => !REMOVED_SOCIAL_SERVICE_ITEM_IDS.has(item.id))
+      .map((item) => item.key),
+    ...BRNO_REQUIREMENT_KEYS
+  ]);
   for (const [key, selected] of Object.entries(state.realizationSelections)) {
     if (Number(selected) === 1
-      && (validKeys.has(key) || key === SPECIAL_BUILDING_PARKING_REALIZATION_KEY)) {
+      && (validKeys.has(key) || key === SPECIAL_BUILDING_PARKING_REALIZATION_KEY)
+      && !(BRNO_REQUIREMENT_KEYS.has(key)
+        && state.capacityEdits[key]?.satisfiesNearbyCapacity === true)) {
       keys.add(key);
     }
   }
@@ -10191,7 +12593,7 @@ function getRealizationExportRow(item, kind, kindOverrides = new Map()) {
     ? numericOrNull(targetedCost)
     : projectEstimate?.cost ?? getDisplayedCost(item, calc, effectiveKind);
   const comparisonDelta = effectiveKind === "recommended"
-    && getPrimary("REZIM_STD") !== "STANDARD"
+    && !isCompleteStandardMode()
     && hasStandardComparison(item)
     && !SCHOOL_CAPACITY_ITEM_IDS.has(item.id)
     ? getStandardComparison(item).delta : null;
@@ -10219,7 +12621,7 @@ function getRealizationExportRow(item, kind, kindOverrides = new Map()) {
         : effectiveKind === "infrastructure" ? "Rezerva"
           : "Nadstandard / definované uživatelem",
     quantityValue,
-    quantityText,
+    quantityText: formatRequirementSummaryQuantity(item, effectiveKind, quantityText),
     cost: numericOrNull(cost),
     zero: isZero,
     gray: effectiveKind === "recommended" && isMmrRequirementInactive(item)
@@ -10275,7 +12677,10 @@ function showRealizationCompletionDialog(groups) {
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.dataset.exportCompletionKind = group.kind;
-      checkbox.checked = group.kind === "legal";
+      const standardMode = getSelectedStandardMode();
+      checkbox.checked = group.kind === "legal"
+        || standardMode !== "ZAKON" && group.kind === "recommended"
+        || standardMode === "MAX_STANDARD" && group.kind === "review";
       label.append(checkbox, document.createTextNode(
         `${group.title} (${group.items.length})`));
       legend.append(label);
@@ -10285,10 +12690,19 @@ function showRealizationCompletionDialog(groups) {
         const row = getRealizationExportRow(item, group.kind);
         const name = item ? displayCatalogItemName(item)
           : "Parkování realizovaných specializovaných staveb (splnění vyhlášky č. 146/2024 Sb.)";
-        const detail = row
-          ? `${row.quantityText} · ${formatCost(row.cost)}`
-          : "bez vypočteného výsledku";
-        itemList.append(createElement("li", "", `${name} — ${detail}`));
+        const itemRow = createElement("li", "realization-export-item");
+        itemRow.append(createElement("span", "realization-export-item-name", name));
+        const detail = createElement("span", "realization-export-item-detail");
+        if (row) {
+          detail.append(
+            createElement("span", "realization-export-item-quantity", row.quantityText),
+            createElement("span", "realization-export-item-cost", formatCost(row.cost))
+          );
+        } else {
+          detail.append(createElement("span", "", "bez vypočteného výsledku"));
+        }
+        itemRow.append(detail);
+        itemList.append(itemRow);
       }
       fieldset.append(itemList);
       list.append(fieldset);
@@ -10442,6 +12856,30 @@ function getRealizationExportRows(kindOverrides = new Map()) {
   if (selectedKeys.has(SPECIAL_BUILDING_PARKING_REALIZATION_KEY)) {
     rows.push(getRealizationExportRow(null, "legal"));
   }
+  for (const item of BRNO_REQUIREMENTS) {
+    if (!selectedKeys.has(item.key)) continue;
+    const estimate = getBrnoRequirementEstimate(item);
+    const quantityText = !estimate || estimate.incomplete
+      ? "nelze vyhodnotit"
+      : item.type === "cars" ? formatValue(estimate.minimum, "stání")
+        : item.type === "bikes" ? formatValue(estimate.total, "míst")
+          : formatValue(estimate.spaces, "stromových prostorů");
+    rows.push({
+      key: item.key,
+      item: null,
+      kind: "brno",
+      label: item.label,
+      standard: "Brněnská vyhláška",
+      quantityValue: estimate
+        ? item.type === "cars" ? estimate.minimum
+          : item.type === "bikes" ? estimate.total : estimate.spaces
+        : null,
+      quantityText,
+      cost: numericOrNull(estimate?.cost?.cost),
+      zero: estimate?.minimum === 0 || estimate?.total === 0 || estimate?.spaces === 0,
+      gray: state.capacityEdits[item.key]?.satisfiesNearbyCapacity === true
+    });
+  }
   return rows.filter(Boolean);
 }
 
@@ -10455,7 +12893,7 @@ function getParkingCostForQuantity(item, kind, quantity) {
   const surfaceRate = numericOrNull(getParkingEstimateValue(item, kind, "PARKING_SURFACE_RATE_M3"));
   if (buildingRate === null || surfaceRate === null) return null;
   const surcharge = Math.max(0,
-    numericOrNull(getParkingEstimateValue(item, kind, "ITEM_COST_SURCHARGE")) ?? 0.23);
+    numericOrNull(getParkingEstimateValue(item, kind, "ITEM_COST_SURCHARGE")) ?? 0.08);
   const zrn = quantity * volumePerStall
     * (buildingShare * buildingRate + (1 - buildingShare) * surfaceRate);
   return Math.round(zrn * (1 + surcharge));
@@ -10532,9 +12970,10 @@ async function exportRealizedItemsWorkbook() {
   const selectedItems = state.items.filter((item) => selectedKeys.has(item.key)
     && !isInfrastructureItem(item));
   const hasSpecialParking = selectedKeys.has(SPECIAL_BUILDING_PARKING_REALIZATION_KEY);
+  const hasBrnoRequirements = BRNO_REQUIREMENTS.some((item) => selectedKeys.has(item.key));
   const hasReserve = state.items.some((item) =>
     selectedKeys.has(item.key) && isRequirementReserveItem(item));
-  if (!selectedItems.length && !hasSpecialParking && !hasReserve) {
+  if (!selectedItems.length && !hasSpecialParking && !hasBrnoRequirements && !hasReserve) {
     showNotice("Vybranou technickou infrastrukturu nelze exportovat; vyberte její rezervu nebo jinou položku vybavenosti.", true);
     return;
   }
@@ -10562,7 +13001,9 @@ async function exportRealizedItemsWorkbook() {
   const pricedRows = rows.filter((row) => Number.isFinite(row.cost));
   const omittedUnpricedCount = rows.length - pricedRows.length;
   if (!pricedRows.length) {
-    showNotice("Pro vybrané položky není dostupná žádná vypočtená cena; export nebyl vytvořen.", true);
+    showNotice(hasBrnoRequirements
+      ? "Brněnské předpisy stanovují kapacity, nikoli ceny. Bez samostatného ocenění nelze tyto položky zahrnout do cenového exportu."
+      : "Pro vybrané položky není dostupná žádná vypočtená cena; export nebyl vytvořen.", true);
     return;
   }
   const workbook = XLSX.utils.book_new();
@@ -10591,6 +13032,38 @@ function toggleNearbyCapacitySatisfaction(event) {
   if (!button) return false;
   event.preventDefault();
   event.stopPropagation();
+  const viewport = captureRequirementViewport(button);
+  if (button.dataset.capacitySatisfactionItemKey === SPECIAL_BUILDING_PARKING_REALIZATION_KEY) {
+    const disclosureState = captureRequirementDisclosureState();
+    const existing = state.capacityEdits[SPECIAL_BUILDING_PARKING_REALIZATION_KEY] || {};
+    state.capacityEdits[SPECIAL_BUILDING_PARKING_REALIZATION_KEY] = {
+      ...existing,
+      satisfiesNearbyCapacity: !existing.satisfiesNearbyCapacity
+    };
+    saveScenario();
+    renderCategories();
+    renderRequirements();
+    restoreRequirementDisclosureState(disclosureState);
+    restoreRequirementViewport(viewport);
+    updateScenarioStatus();
+    return true;
+  }
+  if (BRNO_REQUIREMENT_KEYS.has(button.dataset.capacitySatisfactionItemKey)) {
+    const itemKey = button.dataset.capacitySatisfactionItemKey;
+    const existing = state.capacityEdits[itemKey] || {};
+    state.capacityEdits[itemKey] = {
+      ...existing,
+      satisfiesNearbyCapacity: !existing.satisfiesNearbyCapacity
+    };
+    const disclosureState = captureRequirementDisclosureState();
+    saveScenario();
+    renderCategories();
+    renderRequirements();
+    restoreRequirementDisclosureState(disclosureState);
+    restoreRequirementViewport(viewport);
+    updateScenarioStatus();
+    return true;
+  }
   const item = state.items.find((candidate) =>
     candidate.key === button.dataset.capacitySatisfactionItemKey);
   if (!item) return true;
@@ -10604,6 +13077,7 @@ function toggleNearbyCapacitySatisfaction(event) {
   renderCategories();
   renderRequirements();
   restoreRequirementDisclosureState(disclosureState);
+  restoreRequirementViewport(viewport);
   updateScenarioStatus();
   return true;
 }
@@ -10640,9 +13114,11 @@ async function loadFile(file) {
       selectedCategory: "", selectedItemKey: "", search: "", hideUnrealizedItems: false,
       collapsedCategories: new Set(), collapsedLists: {}, projectInputGroupsOpen: {},
       derivedDetailsOpen: false, capacityEdits: {}, overrides: {},
-      reviewChecks: {}, standardComparisons: {}, healthChecks: {}, parkingShares: {},
+      reviewChecks: {}, socialServiceChecks: {}, standardComparisons: {},
+      healthChecks: {}, parkingShares: {},
       realizationSelections: {},
       itemEstimateValues: {},
+      brnoInputs: {},
       scenarioChanged: false, inputsChanged: false, persistenceError: false
     });
     const scenarioReadError = readScenario(loaded.projectScenario);
@@ -10681,11 +13157,13 @@ function resetScenario() {
   state.capacityEdits = {};
   state.overrides = {};
   state.reviewChecks = {};
+  state.socialServiceChecks = {};
   state.standardComparisons = {};
   state.healthChecks = {};
   state.parkingShares = {};
   state.realizationSelections = {};
   state.itemEstimateValues = {};
+  state.brnoInputs = {};
   state.hideUnrealizedItems = false;
   state.collapsedCategories = new Set();
   state.collapsedLists = {};
@@ -10725,7 +13203,7 @@ elements.dropzone.addEventListener("drop", (event) => {
   loadFile(event.dataTransfer?.files?.[0]);
 });
 elements.projectInputGrid.addEventListener("change", handleInputChange);
-elements.secondaryInputGrid.addEventListener("change", handleInputChange);
+elements.derivedGrid.addEventListener("change", handleInputChange);
 elements.legalList.addEventListener("change", handleInlineProjectInputChange);
 elements.recommendedList.addEventListener("change", handleInlineProjectInputChange);
 elements.infrastructureList.addEventListener("change", handleInlineProjectInputChange);
@@ -10768,11 +13246,35 @@ elements.categoryList.addEventListener("click", (event) => {
   saveScenario(false);
 });
 elements.requirementColumns.addEventListener("click", (event) => {
+  const feedbackButton = event.target.closest("button[data-feedback-context]");
+  if (feedbackButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    openFeedbackReport(feedbackButton.dataset.feedbackContext);
+    return;
+  }
   if (toggleNearbyCapacitySatisfaction(event)) return;
+  const realizationScopeButton = event.target.closest(
+    "button[data-realization-group-toggle], button[data-realization-section-toggle]"
+  );
+  if (realizationScopeButton) {
+    const scope = realizationScopeButton.hasAttribute("data-realization-group-toggle")
+      ? realizationScopeButton.closest(".requirement-topic-group")
+      : realizationScopeButton.closest(".requirement-column");
+    if (scope) toggleRealizationScope(scope);
+    return;
+  }
   const realizationButton = event.target.closest("button[data-realization-item-key]");
   if (realizationButton) {
     event.preventDefault();
     event.stopPropagation();
+    if (BRNO_REQUIREMENT_KEYS.has(realizationButton.dataset.realizationItemKey)) {
+      setBrnoRequirementSelection(
+        realizationButton.dataset.realizationItemKey,
+        realizationButton.getAttribute("aria-pressed") !== "true"
+      );
+      return;
+    }
     if (realizationButton.dataset.realizationItemKey
       === SPECIAL_BUILDING_PARKING_REALIZATION_KEY) {
       setSpecialParkingRealizationSelection(
@@ -10812,14 +13314,29 @@ elements.hideUnrealizedItems.addEventListener("change", () => {
   elements.visibleCount.textContent = state.hideUnrealizedItems
     ? `${count} realizovaných` : `${count} položek`;
   updateRequirementVisibility();
+  renderBrnoRequirementList();
   saveScenario(false);
 });
 document.querySelector(".derived-details").addEventListener("toggle", (event) => {
   state.derivedDetailsOpen = event.currentTarget.open;
   saveScenario(false);
 });
+document.querySelector("#open-user-guide").addEventListener("click", startUserGuide);
+document.querySelector("#guide-back").addEventListener("click", () => {
+  showUserGuideStep(userGuideStepIndex - 1);
+});
+document.querySelector("#guide-next").addEventListener("click", () => {
+  if (userGuideStepIndex === USER_GUIDE_STEPS.length - 1) finishUserGuide();
+  else showUserGuideStep(userGuideStepIndex + 1);
+});
+document.querySelector("#guide-exit").addEventListener("click", finishUserGuide);
+document.addEventListener("keydown", handleUserGuideKeydown);
 elements.requirementColumns.addEventListener("input", updateTargetedPlanInput);
 elements.requirementColumns.addEventListener("change", updateSpecialBuildingParkingInput);
+elements.brnoList.addEventListener("input", updateBrnoRequirementInputs);
+elements.brnoList.addEventListener("change", updateBrnoRequirementInputs);
+elements.brnoList.addEventListener("input", updateCapacityEdit);
+elements.brnoList.addEventListener("change", updateCapacityEdit);
 elements.categoryList.addEventListener("change", updateRealizationSelection);
 elements.legalList.addEventListener("input", updateCapacityEdit);
 elements.legalList.addEventListener("change", updateCapacityEdit);
@@ -10827,11 +13344,15 @@ elements.legalList.addEventListener("input", updateHealthcareCheck);
 elements.legalList.addEventListener("change", updateHealthcareCheck);
 elements.legalList.addEventListener("input", updateManualReview);
 elements.legalList.addEventListener("change", updateManualReview);
+elements.legalList.addEventListener("input", updateSocialServiceAvailability);
+elements.legalList.addEventListener("change", updateSocialServiceAvailability);
 elements.legalList.addEventListener("input", updateStandardComparison);
 elements.legalList.addEventListener("change", updateStandardComparison);
 elements.legalList.addEventListener("click", handleRequirementClick);
 elements.recommendedList.addEventListener("input", updateCapacityEdit);
 elements.recommendedList.addEventListener("change", updateCapacityEdit);
+elements.recommendedList.addEventListener("input", updateSocialServiceAvailability);
+elements.recommendedList.addEventListener("change", updateSocialServiceAvailability);
 elements.recommendedList.addEventListener("input", updateHealthcareCheck);
 elements.recommendedList.addEventListener("change", updateHealthcareCheck);
 elements.recommendedList.addEventListener("input", updateManualReview);
@@ -10843,7 +13364,6 @@ elements.infrastructureList.addEventListener("input", updateCapacityEdit);
 elements.infrastructureList.addEventListener("change", updateCapacityEdit);
 elements.infrastructureList.addEventListener("input", updateManualReview);
 elements.infrastructureList.addEventListener("change", updateManualReview);
-elements.infrastructureList.addEventListener("change", handleInlineProjectInputChange);
 elements.infrastructureList.addEventListener("click", handleRequirementClick);
 elements.reserveList.addEventListener("input", updateCapacityEdit);
 elements.reserveList.addEventListener("change", updateCapacityEdit);
@@ -10857,16 +13377,19 @@ elements.reviewList.addEventListener("input", updateManualReview);
 elements.reviewList.addEventListener("change", updateManualReview);
 elements.reviewList.addEventListener("input", updateHealthcareCheck);
 elements.reviewList.addEventListener("change", updateHealthcareCheck);
-elements.reviewList.addEventListener("change", handleInlineProjectInputChange);
+elements.reviewList.addEventListener("input", updateSocialServiceAvailability);
+elements.reviewList.addEventListener("change", updateSocialServiceAvailability);
 elements.reviewList.addEventListener("click", handleRequirementClick);
 elements.resetInputs.addEventListener("click", resetScenario);
 document.querySelector("#open-feedback-report").addEventListener("click", () => {
-  const report = document.querySelector("#feedback-report");
-  report.open = true;
-  report.scrollIntoView({ behavior: "auto", block: "start" });
-  document.querySelector("#feedback-errors").focus({ preventScroll: true });
+  openFeedbackReport();
 });
 document.querySelector("#feedback-form").addEventListener("submit", exportFeedbackReport);
+document.querySelector("#feedback-download-link").addEventListener("click", () => {
+  document.querySelector("#feedback-email-link").hidden = false;
+  document.querySelector("#feedback-status").textContent =
+    "Stažení reportu bylo zahájeno. V případě potřeby otevřete připravený e-mail, přiložte .txt a zprávu odešlete.";
+});
 function applyTheme(theme) {
   const isNight = theme === "night";
   document.documentElement.dataset.theme = isNight ? "night" : "day";

@@ -20,6 +20,7 @@
         <span class="local-badge"><span aria-hidden="true"></span> Data zpracována lokálně</span>
         <span id="workbook-status" class="workbook-status">Čeká na načtení</span>
         <span id="workbook-name" class="workbook-name">Sešit nebyl načten</span>
+        <button id="open-user-guide" class="theme-toggle" type="button">Spustit návod</button>
         <button id="open-feedback-report" class="theme-toggle" type="button">Nahlásit chybu</button>
         <button id="theme-toggle" class="theme-toggle" type="button" aria-pressed="false">
           <svg class="theme-icon theme-icon-sun" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3.5"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
@@ -71,9 +72,8 @@
           <div class="empty-list">Načtěte pracovní Excel a zobrazí se upravitelné vstupy.</div>
         </div>
         <details class="derived-details">
-          <summary>Odvozené ukazatele a další výpočtové předpoklady</summary>
+          <summary>Odvozené ukazatele</summary>
           <div id="derived-grid" class="derived-grid"></div>
-          <div id="secondary-input-grid" class="secondary-input-grid"></div>
         </details>
       </section>
 
@@ -97,7 +97,7 @@
           </div>
         </aside>
 
-        <section class="panel requirements-panel" aria-label="Požadavky: povinné, doporučené, uživatelské a rezervní">
+        <section class="panel requirements-panel" aria-label="Požadavky: povinné, doporučené, nadstandardní, rezervní a infrastrukturní">
           <div class="requirements-heading">
             <div>
               <p class="eyebrow">VÝSTUP Z DATOVÉHO KATALOGU</p>
@@ -115,11 +115,11 @@
             </div>
           </div>
           <p id="integrity-warning" class="integrity-warning" hidden></p>
-          <div class="requirement-columns">
+          <div id="requirement-columns" class="requirement-columns">
             <section class="requirement-column legal-column">
               <div class="requirement-column-heading">
-                <span class="requirement-icon" aria-hidden="true">§</span>
-                <div><h3>Zákonem / Povinné</h3><p>Právní minimum a povinnosti vztahující se na konkrétní záměr</p></div>
+                <button class="requirement-icon requirement-section-toggle" type="button" data-realization-section-toggle="legal" aria-pressed="false" aria-label="Vybrat všechny položky: Zákonem / Povinné">§</button>
+                <div><h3><button class="requirement-section-title-toggle" type="button" data-realization-section-toggle="legal" aria-pressed="false">Zákonem / Povinné</button></h3><p>Právní minimum a povinnosti vztahující se na konkrétní záměr</p></div>
                 <span id="legal-count" class="count-badge">0</span>
                 <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="legal" aria-controls="legal-list" aria-expanded="true" aria-label="Sbalit zákonné a podmíněné kontroly"></button>
               </div>
@@ -129,8 +129,8 @@
             </section>
             <section class="requirement-column recommended-column">
               <div class="requirement-column-heading">
-                <span class="requirement-icon" aria-hidden="true">✳</span>
-                <div><h3>Metodika MMR / Doporučené</h3><p>Doporučené standardy a kapacity podle metodiky MMR</p></div>
+                <button class="requirement-icon requirement-section-toggle" type="button" data-realization-section-toggle="recommended" aria-pressed="false" aria-label="Vybrat všechny položky: Metodika MMR / Doporučené">✳</button>
+                <div><h3><button class="requirement-section-title-toggle" type="button" data-realization-section-toggle="recommended" aria-pressed="false">Metodika MMR / Doporučené</button></h3><p>Doporučené standardy a kapacity podle metodiky MMR</p></div>
                 <span id="recommended-count" class="count-badge">0</span>
                 <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="recommended" aria-controls="recommended-list" aria-expanded="true" aria-label="Sbalit doporučené položky"></button>
               </div>
@@ -140,8 +140,8 @@
             </section>
             <section class="requirement-column review-column">
               <div class="requirement-column-heading">
-                <span class="requirement-icon" aria-hidden="true">?</span>
-                <div><h3>Nadstandard / Definované uživatelem</h3><p>Uživatelsky vložené položky a samostatné scénáře nad rámec povinných a doporučených standardů</p></div>
+                <button class="requirement-icon requirement-section-toggle" type="button" data-realization-section-toggle="review" aria-pressed="false" aria-label="Vybrat všechny položky: Nadstandard / Definované uživatelem">?</button>
+                <div><h3><button class="requirement-section-title-toggle" type="button" data-realization-section-toggle="review" aria-pressed="false">Nadstandard / Definované uživatelem</button></h3><p>Uživatelsky vložené položky a samostatné scénáře nad rámec povinných a doporučených standardů</p></div>
                 <span id="review-count" class="count-badge">0</span>
                 <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="review" aria-controls="review-list" aria-expanded="true" aria-label="Sbalit alternativy doporučení"></button>
               </div>
@@ -151,8 +151,8 @@
             </section>
             <section class="requirement-column reserve-column">
               <div class="requirement-column-heading">
-                <span class="requirement-icon" aria-hidden="true">+</span>
-                <div><h3>Rezervy</h3><p>Samostatné volitelné položky navýšení kapacity</p></div>
+                <button class="requirement-icon requirement-section-toggle" type="button" data-realization-section-toggle="reserve" aria-pressed="false" aria-label="Vybrat všechny položky: Rezervy">+</button>
+                <div><h3><button class="requirement-section-title-toggle" type="button" data-realization-section-toggle="reserve" aria-pressed="false">Rezervy</button></h3><p>Samostatné volitelné položky navýšení kapacity</p></div>
                 <span id="reserve-count" class="count-badge">0</span>
                 <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="reserve" aria-controls="reserve-list" aria-expanded="true" aria-label="Sbalit rezervy"></button>
               </div>
@@ -162,13 +162,24 @@
             </section>
             <section class="requirement-column infrastructure-column">
               <div class="requirement-column-heading">
-                <span class="requirement-icon" aria-hidden="true">⌁</span>
-                <div><h3>Infrastruktura</h3><p>Modelové kapacity a náklady; povinnost se posuzuje podle konkrétního záměru a podmínek správců sítí</p></div>
+                <button class="requirement-icon requirement-section-toggle" type="button" data-realization-section-toggle="infrastructure" aria-pressed="false" aria-label="Vybrat všechny položky: Infrastruktura">⌁</button>
+                <div><h3><button class="requirement-section-title-toggle" type="button" data-realization-section-toggle="infrastructure" aria-pressed="false">Infrastruktura</button></h3><p>Modelové kapacity a náklady; povinnost se posuzuje podle konkrétního záměru a podmínek správců sítí</p></div>
                 <span id="infrastructure-count" class="count-badge">0</span>
                 <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="infrastructure" aria-controls="infrastructure-list" aria-expanded="true" aria-label="Sbalit infrastrukturu"></button>
               </div>
               <div id="infrastructure-list" class="requirement-list">
                 <div class="empty-list">Načtěte sešit pro zobrazení infrastrukturních propočtů.</div>
+              </div>
+            </section>
+            <section class="requirement-column brno-column">
+              <div class="requirement-column-heading">
+                <button class="requirement-icon requirement-section-toggle" type="button" data-realization-section-toggle="brno" aria-pressed="false" aria-label="Vybrat všechny položky: Brněnská vyhláška">§</button>
+                <div><h3><button class="requirement-section-title-toggle" type="button" data-realization-section-toggle="brno" aria-pressed="false">Brněnská vyhláška</button></h3><p>Samostatné volitelné propočty podle konkrétních ustanovení BSP</p></div>
+                <span id="brno-count" class="count-badge">0</span>
+                <button class="collapse-button requirement-collapse-button" type="button" data-collapse-list="brno" aria-controls="brno-list" aria-expanded="true" aria-label="Sbalit brněnské stavební předpisy"></button>
+              </div>
+              <div id="brno-list" class="requirement-list">
+                <div class="empty-list">Načtěte sešit pro zobrazení volitelných propočtů BSP.</div>
               </div>
             </section>
           </div>
@@ -179,8 +190,12 @@
       <details id="feedback-report" class="feedback-panel">
         <summary>Nahlásit chybu nebo navrhnout změnu</summary>
         <p class="feedback-note">Export zahrne uložené zdroje, poznámky a výsledky kontrol včetně jejich položky či pravidla a souvisejících zadaných hodnot, také z dříve uloženého scénáře. U chyby nebo návrhu popište i místo v aplikaci (sekci a položku); do souboru se přidá také právě otevřený sešit a vybraná položka/skupina.</p>
-        <p class="feedback-note">Aplikace nic neposílá na server. Vytvoří místní soubor .txt a otevře váš e-mailový klient s připravenou adresou xavavrusa@vutbr.cz. Prohlížeč neumí soubor automaticky přiložit ani zprávu odeslat: přiložte stažený .txt a e-mail odešlete sami ze svého účtu.</p>
+        <p class="feedback-note">Aplikace nic neposílá na server. Nejprve nabídne stažení souboru .txt; po zahájení stahování můžete samostatným tlačítkem otevřít e-mailový klient s adresou xavavrusa@vutbr.cz. Soubor přiložte ručně a zprávu odešlete sami ze svého účtu.</p>
         <form id="feedback-form" class="feedback-form">
+          <label class="feedback-field feedback-location-field" for="feedback-location">
+            <span>Místo v aplikaci</span>
+            <input id="feedback-location" type="text" placeholder="Předvyplní se z právě zobrazené položky; lze upravit">
+          </label>
           <label class="feedback-field" for="feedback-errors">
             <span>Pozorované chyby</span>
             <textarea id="feedback-errors" rows="4" placeholder="Co nefunguje, jak chybu zopakovat a u které sekce/položky?"></textarea>
@@ -190,12 +205,34 @@
             <textarea id="feedback-changes" rows="4" placeholder="Co změnit, kde v aplikaci a u které položky?"></textarea>
           </label>
           <div class="feedback-actions">
-            <button class="text-button feedback-submit" type="submit">Exportovat .txt a připravit e-mail</button>
+            <button class="text-button feedback-submit" type="submit">Připravit report .txt</button>
+            <a id="feedback-download-link" class="text-button feedback-download-link" href="#" hidden>Stáhnout report .txt</a>
+            <a id="feedback-email-link" class="text-button feedback-email-link" href="#" hidden>Otevřít připravený e-mail</a>
             <p id="feedback-status" class="feedback-status" role="status" aria-live="polite"></p>
           </div>
         </form>
       </details>
     </main>
+  </div>
+  <div id="user-guide-tour" class="guide-tour" role="dialog" aria-modal="false"
+    aria-labelledby="guide-step-title" aria-describedby="guide-step-text" hidden>
+    <section class="guide-window" tabindex="-1">
+      <div class="guide-window-heading">
+        <p class="eyebrow">PRŮVODCE APLIKACÍ</p>
+        <span id="guide-step-count" class="guide-step-count"></span>
+      </div>
+      <h2 id="guide-step-title"></h2>
+      <p id="guide-step-text" class="guide-step-text"></p>
+      <p id="guide-target-note" class="guide-target-note"></p>
+      <div class="guide-progress" aria-hidden="true"><span id="guide-progress-bar"></span></div>
+      <div class="guide-controls">
+        <button id="guide-exit" class="guide-exit" type="button">Ukončit návod</button>
+        <div class="guide-step-controls">
+          <button id="guide-back" class="text-button" type="button">Zpět</button>
+          <button id="guide-next" class="guide-next" type="button">Další</button>
+        </div>
+      </div>
+    </section>
   </div>
 </body>
 </html>

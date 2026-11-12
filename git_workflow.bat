@@ -1,3 +1,5 @@
+//timeout 1200
+
 @echo off
 setlocal
 cd /d "%~dp0" || goto :error

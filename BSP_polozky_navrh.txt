@@ -1,0 +1,81 @@
+NAVRH POLOZEK PODLE BRNENSKYCH STAVEBNICH PREDPISU
+Datum zpracovani: 11. 11. 2026
+
+ZAMER
+Navrhnout samostatne polozky BSP jako varianty nejblizsich existujicich polozek v katalogu. Tyto navrhy nemaji nahrazovat celostatni zakonny vypocet ani se maji bez dalsich vstupu povazovat za univerzalni pro kazdy projekt. U kazde karty musi byt videt konkretni paragraf, uzemi a datum ucinnosti. Pred implementaci overit konkretni pouziti a zdrojova data.
+
+DULEZITE UPOZORNENI KE ZDROJI
+Soubor BSP_uplne_zneni_po_1_novele_2026_11_05.pdf je na titulni strane oznacen jako pracovni text, nikoli oficialni zneni, bez legislativni a jazykove korektury. Rozhodujici je zneni vyhlasene ve Sbirce pravnich predpisu uzemnich samospravnych celku. Pred pouzitim cisel v aplikaci je proto nutne kontrolovat oficialni zneni.
+
+Prehled ucinnosti uvedeny v pracovnim PDF:
+- Narizeni SMB c. 14/2024: ucinnost od 1. 7. 2024.
+- Novela c. 23/2026: vybrane zmeny ucinnosti od 3. 11. 2026, vcetne § 27 a prilohy c. 4.
+- Dalsi vyjmenovane zmeny ucinnosti az od 1. 1. 2027; mezi nimi § 25 odst. 4 a prechodna ustanoveni. Novela stanovi, ze u dokumentace pro povoleni stavby zpracovane pred prislusnou ucinnosti se postupuje podle predchoziho zneni.
+- Jednotlive polozky proto musi mit vlastni datum ucinnosti a kontrolu prechodnych ustanoveni; nelze vsechny zmeny oznacit jednim datem.
+
+1. PARKOVANI MOTOROVYCH VOZIDEL – BRNO (MINIMUM, MAXIMUM A FORMA)
+Nejblizsi existujici varianta: VYB_15A_1_LAW – zakonny vypocet parkovani; doplnkova inspirace: karta parkovani realizovanych specializovanych staveb.
+
+Podklady: BSP § 25 a § 26, prilohy c. 2 a 3.
+- Pro stavby (mimo docasne stavby nejvyse na jeden rok) se stanovi minimalni pozadovany i maximalni pripustny pocet stani.
+- Zakladni pocet se sklada podle ucelu uzivani z HPP prislusne casti stavby a ukazatele v priloze c. 2. Garáze, sklepy, technicke a pomocne prostory a objekty technicke infrastruktury se do HPP ucelu nezahrnuji.
+- U bydleni se v priloze uvadi 120 m2 HPP na jedno zakladni stani, nejvyse vsak 2 stani na bytovou jednotku. Ostatni ucely maji samostatne ukazatele a podily vazanych/navstevnickych stani; specificke ucely bodu 12 se stanovuji individualne podle navstevniku a pracovnich mist.
+- Pokud prislusny plan nestanovi procento jinak, priloha c. 3 uvadi zony 00–03. Pro vazana stani ostatnich ucelu a navstevnicka stani vsech ucelu jsou minima 0/15/35/75 %; maximum 15 % je uvedeno pouze pro zonu 00, v zonach 01–03 tabulka maximum neuvadi. Pro vazana stani bydleni jsou minima 0/50/75/100 %; tabulka pro ne maximum neuvadi. Vyber zony nelze odhadnout z obecneho poctu obyvatel: je nutna poloha pozemku a prislusna mapa.
+- Vazena a navstevnicka stani se pocitaji oddelene. Zaokrouhlovani je rozdilne podle typu stani a je stanoveno v § 25 odst. 2.
+- § 26 resi umisteni a formu: vazana stani jsou mimo ulicni prostranstvi (s uvedenou vyjimkou nizkopodlazniho bydleni do 3 podlazi); navstevnicka stani mohou byt v ulicnim prostranstvi za podminek predpisu. Vazena stani pro bydleni mimo nizkopodlazni zastavbu do 3 podlazi a stavby maximalne se 3 byty se resi uzavrenymi/polootevrenymi garazemi nebo parkovacimi zakladaci. Jednotliva pristupnost stani a moznost umisteni mimo pozemek maji dalsi podminky.
+- Priloha c. 2 stanovuje vyhrazena stani pro osoby s omezenou schopnosti pohybu podle poctu navstevnickych stani a jejich rozmery. Zmeny § 25 odst. 4 jsou v pracovnim PDF uvedeny s ucinnosti od 1. 1. 2027; do te doby je treba pouzit prislusne prechodne pravidlo.
+
+Vstupy pro skutecny vypocet: lokalita/zona, HPP po jednotlivych ucelech uzivani, pocet bytovych jednotek, podil vazanych a navstevnickych stani, pripadna konkretni procenta v platne uzemne-planovaci dokumentaci, typ zastavby a datum dokumentace. Bez techto udaju nema aplikace zobrazit jedine univerzalni cislo.
+Cena: predpis cenu neurcuje. Neprenaset cenu z obecne parkovaci polozky bez odpovidajiciho rozsahu a oceneneho typu stani; cenu parkovaciho domu a povrchoveho stani uvadet oddelene a jako editovatelny projektovy odhad.
+
+2. PARKOVANI JIZDNICH KOL – BRNO
+Nejblizsi existujici varianty: VYB_15B_1 a VYB_15B_2 – parkovani kol.
+
+Podklady: BSP § 27 a priloha c. 4; zmeny nabyvaji podle titulni strany pracovniho PDF ucinnosti 3. 11. 2026.
+- Pocet vazanych a navstevnickych mist se urcuje z HPP podle ucelu uzivani v tabulce prilohy c. 4; podily vazanych a navstevnickych mist jsou pro jednotlive ucely ruzne.
+- Pro predstavu: bydleni 60 m2 HPP/misto (90 % vazana, 10 % navstevnicka); jednotlive obchody v parteru 150 m2/misto (40/60); velkoplosny obchod 250 m2/misto (30/70); ambulantni zdravotnicke zarizeni 250 m2/misto (70/30); kulturni instituce 250 m2/misto (30/70). U ostatnich ucelu pouzit prislusny radek tabulky, nikoli analogicky odhad.
+- Nova stavba pouziva celou HPP. U zmen dokoncenych staveb se standardne pouziva nove pridana HPP, ale priloha c. 4 ma vyjimky pro rozsahle zmeny budovy a parkovist/elektroinstalaci.
+- U bytovych domu pri splneni podminek prilohy musi byt nejmene 2 mista na bytovou jednotku.
+- Pri souctu alespon 50 mist musi nejmene 2 % byt pro kola nadstandardnich rozmeru; zapocitavaji se do celku, nejsou navic. Vazane mista musi byt zastresena.
+- Rozmer bezneho mista je nejmene 0,45 x 2 m, neni-li dolozena technologie umoznujici mensi plochu. Nadstandardni misto musi umoznit kolo nejmene 2,75 x 0,85 m.
+- Vazany pocet se zaokrouhluje nahoru; navstevnicke a nadstandardni pocty se zaokrouhluji pravidly § 27.
+
+Vstupy: HPP podle ucelu uzivani, pocet bytovych jednotek, typ stavby/nove nebo zmena, rozsah obalky a zasah do parkoviste/elektroinstalace, predpokladany pocet mist a rezim vazane/navstevnicke.
+Cena: BSP stanovuje pocty a rozmery, ne cenu. Ponechat cenu jako samostatny ocenovaci vstup, ne jako pravni parametr.
+
+3. PROSTORY PRO RUST STROMU U POVRCHOVEHO PARKOVANI
+Nejblizsi existujici varianty: VYB_04A – verejne prostranstvi; VYB_04B – parkova zelena; pripadne hristove/zelene polozky VYB_03A–VYB_03C pro vzhled a plosne bilance.
+
+Podklad: BSP § 26 odst. 7.
+- Povrchova parkoviste se doplnuji prostory umoznujicimi rust a rozvoj stromu v plose parkoviste, minimalne 1 prostor na 8 stani.
+- Pokud to z technickych duvodu nelze umistit v parkovisti, lze prostory umistit jinde na stavebnim pozemku nebo v ramci zameru.
+- Uzemni/regulacni plan muze stanovit jinak.
+
+Navrhovany vypocet: pocet stromovych prostoru = ceil(pocet povrchovych stani / 8). Do zakladu zahrnout pouze povrchova stani, ne garaze a zakladace. Umisteni a technickou vyjimku ponechat k potvrzeni projektantem.
+Vstupy: pocet povrchovych stani z vybrane parkovaci varianty a potvrzeni, zda uzemni/regulacni plan neurcuje jinak.
+Cena: predpis ji neurcuje. Bez dolozeneho oceneni jen pocet prostoru; nezapoctit automaticky cenu celeho parku nebo samostatneho stromu.
+
+4. ODSTUP STAVBY OD SOUSEDNIHO POZEMKU
+Podklad: BSP § 22 odst. 2.
+- Neni-li stanoveno jinak uzemnim/regulacnim planem nebo se neuplatni nektera z vyjmenovanych vyjimek, musi byt odstup stavby od hranice sousedniho pozemku nejmene 2 m.
+- Vyjimky se tykaji zejmena stavebni cary, obvykleho charakteru zastavby, spolecneho zamery nebo nizkych staveb s omezenou delkou hran.
+
+Vypocet: porovnat skutecny nejmensi odstup s 2 m, ale pouze po rucnim potvrzeni, ze se na konkretni situaci nevztahuje vyjimka ani odchylna uzemne-planovaci dokumentace. Bez potvrzeni nelze vysledek vyhodnotit.
+
+5. HOSPODARENI SE SRAZKOVYMI VODAMI – OMEZENI ODTOKU
+Podklad: BSP § 30 odst. 2.
+- Maximalni odtok srazkovych vod neprekroci 3 l/s z hektaru plochy, nestanovi-li spravce toku nebo kanalizace jinak.
+- Je-li vysledny celkovy odtok nizsi nez 0,5 l/s, plati 0,5 l/s.
+
+Vypocet: vychozi limit = max(0,5 l/s, 3 l/s/ha x odvodnovana plocha v ha). Jiny limit lze pouzit pouze podle podkladu spravce toku nebo kanalizace. Predpis neurcuje cenu retence ani konkretni objem nadrze; objem nadrze se proto z tohoto limitu samotneho neodvozuje.
+
+IMPLEMENTACNI POZNAMKY
+- V aplikaci jsou tri volitelne karty: automobilova stani, stani pro kola a prostory pro rust stromu u venkovnich stani. Odstup stavby od sousedniho pozemku a nejvyssi odtok srazkovych vod byly z aplikace odebrany.
+- HPP se automaticky sklada z vypoctu vybranych realizovanych polozek podle ucelu uzivani. Bydleni prebira HPP a pocet bytu z hlavnich vstupu; pro kategorie, ktere nejsou pokryty polozkou katalogu, lze zadat samostatne doplneni HPP.
+- Pobytove socialni sluzby se prirazuji k socialni peci, nikoli k dlouhodobemu ubytovani; HZS a policie se nesmi automaticky povazovat za administrativu s vysokou navstevnosti. Pro ucel bez odpovidajici polozky katalogu se pouzije doplneni HPP mimo realizace.
+- Propocty zobrazuji mezikroky HPP / ukazatel, podil vazanych a navstevnickych mist, zaokrouhleni a odvozeni venkovnich stani. Stromove prostory se odvodi z venkovnich stani jako zaokrouhleni nahoru po deleni osmi.
+- Vymery a ceny jsou samostatne editovatelne projektove odhady. Parkovaci dům/kryty objekt a venkovni zpevnene plochy se pocitaji oddelene podle podilu, objemu, plochy a zadanych sazeb obdobne jako u modelu parkovani; ceny ani tyto odhadove koeficienty nestanovi predpis. Plocha a cena stromoveho prostoru jsou samostatny scenario-vstup.
+- Ucinnost, prechodna ustanoveni, vyjimky a konkretni pouziti se musi overit podle zdroju a projektu; dodane pracovni PDF neni samo o sobe pravnim overenim.
+
+ZDROJOVY SOUBOR
+BSP_uplne_zneni_po_1_novele_2026_11_05.pdf (pracovni uplne zneni, titulni strana upozornuje, ze neni oficialni).
